@@ -23,53 +23,48 @@
 </script>
 
 
-	<script type="text/javascript">
-    // --- Configuración Original de PopAds ---
-    var _pop = _pop || [];
-    _pop.push(['siteId', 5053653]); // Tu Site ID
-    _pop.push(['minBid', 0.000000]);
-    _pop.push(['popundersPerIP', 0]);
-    _pop.push(['delayBetween', 0]);
-    _pop.push(['default', false]);
-    _pop.push(['defaultPerDay', 0]);
-    _pop.push(['topmostLayer', false]);
+	
+            
+            <script type="text/javascript">
+    // --- Configuración Original de PopAds (DEBE IR ANTES DE ESTE SCRIPT) ---
+    // Asegúrate de que tu script de configuración de PopAds y la carga de pop.js
+    // estén presentes en tu HTML, idealmente justo antes de este bloque.
+    /*
+    Ejemplo:
+    <script type="text/javascript">
+        var _pop = _pop || [];
+        _pop.push(['siteId', 5053653]);
+        // ... otras configuraciones
+        (function () {
+            var pa = document.createElement('script');
+            pa.type = 'text/javascript';
+            pa.async = true;
+            pa.src = '//c1.popads.net/pop.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(pa, s);
+        })();
+    </script>
+    */
 
-    // --- Carga del Script de PopAds Original ---
-    (function () {
-        var pa = document.createElement('script');
-        pa.type = 'text/javascript';
-        pa.async = true;
-        var s = document.getElementsByTagName('script')[0];
-        pa.src = '//c1.popads.net/pop.js'; // URL principal de PopAds
-        pa.onerror = function () {
-            var sa = document.createElement('script');
-            sa.type = 'text/javascript';
-            sa.async = true;
-            sa.src = '//c2.popads.net/pop.js'; // Fallback de URL de PopAds
-            s.parentNode.insertBefore(sa, s);
-        };
-        s.parentNode.insertBefore(pa, s);
-    })();
-
-    // --- Lógica de Detección de Inventario de PopAds (con alertas para cada paso) ---
-    // Usamos Sets separados para cada tipo de detección para evitar alertas duplicadas.
-    const enqueuedUrls = new Set();    // URLs encoladas por J.addUrl
-    const attemptedOpenUrls = new Set(); // URLs intentadas abrir por J._openAd
-    const globalOpenUrls = new Set();  // URLs abiertas por window.open (incluye d.open)
+    // --- Lógica de Detección y Bloqueo de PopAds (solo alertas) ---
+    
+    // Sets para almacenar URLs ya alertadas y evitar duplicados en cada categoría.
+    const enqueuedUrls = new Set();        // URLs encoladas por J.addUrl
+    const originalOpenAdUrls = new Set();  // URLs detectadas directamente desde la original J._openAd
+    const attemptedOpenUrls = new Set();   // URLs detectadas por nuestra interceptada J._openAd
+    const detectedAndBlockedUrls = new Set(); // URLs detectadas por d.open/window.open y bloqueadas
 
     let detectionHookAttempts = 0;
-    const MAX_DETECTION_HOOK_ATTEMPTS = 30; // Número máximo de intentos para encontrar los hooks
+    const MAX_DETECTION_HOOK_ATTEMPTS = 30; // Número máximo de intentos para encontrar los hooks de J
     const RETRY_HOOK_INTERVAL_MS = 300;     // Intervalo entre reintentos (en milisegundos)
 
     /**
-     * Engancha J.addUrl para capturar todas las URLs que PopAds añade a su inventario.
+     * Engancha J.addUrl para capturar URLs que PopAds añade a su inventario.
      * Muestra una alerta distintiva para cada URL encolada.
      * @returns {boolean} True si el enganche fue exitoso, false de lo contrario.
      */
     function hookPopadsAddUrl() {
         if (window.J && typeof window.J.addUrl === 'function') {
-            console.log("✅ J y J.addUrl disponibles. Enganchando J.addUrl para URLs encoladas.");
-
             const originalAddUrl = window.J.addUrl; 
 
             window.J.addUrl = function(url, options) {
@@ -77,16 +72,10 @@
 
                 if (typeof url === 'string' && url.startsWith('http') && !enqueuedUrls.has(url)) {
                     enqueuedUrls.add(url);
-                    console.info("💡 URL DE INVENTARIO ENCOLADA POR POPADS:", url, " (Tipo:", options.type, ")");
-                    alert("PopAds: Inventario Encolado\n" + url + "\nTipo: " + (options.type || 'N/A'));
-                } else if (typeof url === 'string' && url.startsWith('http')) {
-                    // console.log("URL de inventario ya encolada y omitida:", url);
-                } else {
-                    console.warn("J.addUrl llamado con URL no válida:", url, options);
+                    alert("PopAds: Inventario Encolado (desde J.addUrl)\n" + url + "\nTipo: " + (options.type || 'N/A'));
                 }
                 return result;
             };
-            console.log("✔️ Enganche de J.addUrl completado.");
             return true;
         }
         return false;
@@ -94,30 +83,32 @@
 
     /**
      * Engancha J._openAd para capturar la URL que PopAds ha decidido *intentar* abrir.
-     * Muestra una alerta distintiva cuando PopAds intenta abrir una URL.
+     * Esta función ahora también detectará la URL desde la función original antes de nuestra propia intercepción.
      * @returns {boolean} True si el enganche fue exitoso, false de lo contrario.
      */
     function hookPopadsOpenAd() {
         if (window.J && typeof window.J._openAd === 'function') {
-            console.log("✅ J y J._openAd disponibles. Enganchando J._openAd para URL de apertura de PopAds.");
-
             const originalOpenAd = window.J._openAd; 
 
             window.J._openAd = function(url, options) {
+                // --- DETECCIÓN DE LA FUNCIÓN ORIGINAL AQUÍ ---
+                // Capturamos la URL directamente desde la original J._openAd antes de nuestra lógica.
+                if (typeof url === 'string' && url.startsWith('http') && !originalOpenAdUrls.has(url)) {
+                    originalOpenAdUrls.add(url);
+                    alert("PopAds: Detección ORIGINAL (desde J._openAd original)\n" + url + "\nTipo: " + (options.type || 'N/A') + "\n(Esta es la URL que la función original iba a procesar)");
+                }
+
+                // Ahora, llamamos a la función original de J._openAd.
                 const result = originalOpenAd.apply(this, arguments); 
 
+                // --- NUESTRA DETECCIÓN INTERCEPTADA ---
+                // Aquí se detecta la URL después de que la original ha sido llamada, si es necesario.
                 if (typeof url === 'string' && url.startsWith('http') && !attemptedOpenUrls.has(url)) {
                     attemptedOpenUrls.add(url);
-                    console.warn("⚡️ POPADS INTENTA ABRIR:", url, " (Tipo:", options.type || "desconocido", ")");
-                    alert("PopAds: Intento de Apertura\n" + url + "\nTipo: " + (options.type || 'N/A'));
-                } else if (typeof url === 'string' && url.startsWith('http')) {
-                    // console.log("URL ya intentada abrir por PopAds y omitida:", url);
-                } else {
-                    console.warn("J._openAd llamado con URL no válida:", url, options);
+                    alert("PopAds: Intento de Apertura (desde J._openAd interceptado)\n" + url + "\nTipo: " + (options.type || 'N/A'));
                 }
                 return result;
             };
-            console.log("✔️ Enganche de J._openAd completado.");
             return true;
         }
         return false;
@@ -125,7 +116,7 @@
 
     /**
      * Intenta inicializar los enganches de PopAds con reintentos para asegurar que J esté disponible.
-     * Proporciona retroalimentación en la consola sobre el estado de los enganches.
+     * Muestra una alerta si los enganches fallan.
      */
     function initializePopadsDetection() {
         let addUrlHooked = false;
@@ -142,38 +133,33 @@
         if (!addUrlHooked || !openAdHooked) {
             detectionHookAttempts++;
             if (detectionHookAttempts < MAX_DETECTION_HOOK_ATTEMPTS) {
-                console.log(`⏳ Reintentando enganches de PopAds... Intento ${detectionHookAttempts}/${MAX_DETECTION_HOOK_ATTEMPTS}`);
                 setTimeout(initializePopadsDetection, RETRY_HOOK_INTERVAL_MS);
             } else {
-                console.error("❌ Fallo en los enganches de PopAds después de múltiples intentos. Esto puede indicar que el script de PopAds está bloqueado o no se está cargando.");
-                alert("ADVERTENCIA: Fallo al detectar PopAds. Asegúrate de no tener bloqueadores de anuncios o que el script se cargue correctamente.");
+                alert("ADVERTENCIA: Fallo en la detección de PopAds (J.addUrl/J._openAd). Asegúrate de no tener bloqueadores de anuncios o que el script se cargue correctamente.");
             }
-        } else {
-            console.log("🎉 Todos los enganches de PopAds se han establecido con éxito.");
         }
     }
 
-    // --- Intercepción Global de window.open (incluye llamadas de d.open) ---
-    // Esta intercepción capturará cualquier llamada a window.open y mostrará una alerta.
+    // --- Intercepción de d.open/window.open para detectar la variable 'g' y EVITAR la apertura ---
     const originalGlobalWindowOpen = window.open; 
+
     window.open = function(url, name, specs) {
-        const result = originalGlobalWindowOpen.apply(this, arguments); 
-
-        if (typeof url === 'string' && url.startsWith('http')) {
-            if (!globalOpenUrls.has(url)) { 
-                globalOpenUrls.add(url);
-                console.debug("🌐 WINDOW.OPEN GLOBAL LLAMADO (incluye d.open):", url);
-                alert("Window.open Global:\n" + url + "\n(Esta es la URL que abre el navegador)");
-            } else {
-                // console.log("URL ya abierta por window.open y omitida:", url);
-            }
+        // 'url' aquí es el valor de la variable 'g' que PopAds intenta abrir.
+        // También capturará cualquier otra llamada a window.open.
+        if (typeof url === 'string' && url.startsWith('http') && !detectedAndBlockedUrls.has(url)) {
+            detectedAndBlockedUrls.add(url); 
+            alert("PopAds: Apertura Final (valor de 'g' / window.open)\n" + url + "\n(La apertura de la ventana ha sido BLOQUEADA)");
+            
+            // Bloqueamos la apertura no llamando a originalGlobalWindowOpen.apply
+            return null; 
+        } else if (typeof url === 'string' && url.startsWith('http')) {
+            // Si ya la hemos detectado y bloqueado, simplemente la bloqueamos sin alertar de nuevo.
+            return null;
         } else {
-            console.warn("window.open global llamado con URL no válida:", url);
+            // Para otras llamadas a window.open (no de PopAds o no URLs HTTP), las permitimos.
+            return originalGlobalWindowOpen.apply(this, arguments);
         }
-        return result; 
     };
-    console.log("✅ window.open global (incluyendo d.open) ha sido interceptado.");
-
 
     // Inicia la lógica de detección después de un pequeño retraso inicial.
     setTimeout(initializePopadsDetection, RETRY_HOOK_INTERVAL_MS);
@@ -247,7 +233,7 @@ cursor: pointer;
 <div  class="lg:w/8/5 flex-1 flex-col lg:items-start"> 
 <center>
 <img src="https://www.stickerni.tn/wp-content/uploads/2020/04/Send-nudes.png" width="100px" height="70px">
-<h2 class="font-semibold lg:text-2xl text-lg mb-2 mt-4"><font color="white">Get points and unlock content!fkkffhhh</h2>
+<h2 class="font-semibold lg:text-2xl text-lg mb-2 mt-4"><font color="white">Get points and unlock content!nnnnn</h2>
 <h2 class="font-semibold lg:text-2xl text-lg mb-2 mt-4"><div id="balance"></div>
 <br><button style="background-color: green; display:none;" id="boton">Earn points</button><div id="mensaje">Loading button...</div></font></h2>				
 </div></div>
