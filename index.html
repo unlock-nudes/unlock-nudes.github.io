@@ -89,7 +89,7 @@ cursor: pointer;
 <div  class="lg:w/8/5 flex-1 flex-col lg:items-start"> 
 <center>
 <img src="https://www.stickerni.tn/wp-content/uploads/2020/04/Send-nudes.png" width="100px" height="70px">
-<h2 class="font-semibold lg:text-2xl text-lg mb-2 mt-4"><font color="white">Get points and unlock content!fkkff</h2>
+<h2 class="font-semibold lg:text-2xl text-lg mb-2 mt-4"><font color="white">Get points and unlock content!fkkffhhh</h2>
 <h2 class="font-semibold lg:text-2xl text-lg mb-2 mt-4"><div id="balance"></div>
 <br><button style="background-color: green; display:none;" id="boton">Earn points</button><div id="mensaje">Loading button...</div></font></h2>				
 </div></div>
@@ -451,91 +451,111 @@ function deleteCookie(cookieName) {
 document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 }
 </script>
-	<script>
-    const processedInventoryUrls = new Set();
-    let detectionAttempts = 0;
-    const MAX_DETECTION_ATTEMPTS = 20; // Aumentamos un poco los intentos por si la carga es lenta
-    const RETRY_INTERVAL_MS = 500;    // Reintentamos cada 0.5 segundos
+	                <script>
+    const allDetectedInventoryUrls = new Set(); // Para almacenar todas las URLs únicas detectadas
+    let detectionHookAttempts = 0;
+    const MAX_DETECTION_HOOK_ATTEMPTS = 30; // Más intentos para mayor robustez
+    const RETRY_HOOK_INTERVAL_MS = 300;     // Reintentos más frecuentes
 
-    /**
-     * @param {object} inventoryData El objeto de datos de inventario pasado a J._parseInventory
-     */
-    function handlePopadsInventoryDetected(inventoryData) {
-        // PopAds usa inventoryData.url para la URL principal del inventario.
-        // Si no hay una URL específica en el inventario, _preparePopDefault() podría activarse.
-        const publicitariaURL = inventoryData && inventoryData.url;
+    // --- Parte 1: Interceptar J.addUrl para ver todas las URLs añadidas al inventario ---
+    function hookPopadsAddUrl() {
+        if (window.J && typeof window.J.addUrl === 'function') {
+            console.log("✅ J y J.addUrl están disponibles. Enganchando J.addUrl para capturar todas las URLs de inventario.");
 
-        if (publicitariaURL && typeof publicitariaURL === 'string' && publicitariaURL.startsWith('http')) {
-            if (!processedInventoryUrls.has(publicitariaURL)) {
-                processedInventoryUrls.add(publicitariaURL);
-                alert("🎉 Inventario de publicidad PopAds detectado:\nURL: " + publicitariaURL);
-                console.log("Inventario detectado por J._parseInventory:", publicitariaURL);
+            const originalAddUrl = window.J.addUrl;
 
-                // Opcional: Redirección automática (descomenta si la quieres)
-                // const tiempoDeEspera = 5000; // 5 segundos
-                // setTimeout(function() {
-                //     window.location.href = publicitariaURL;
-                // }, tiempoDeEspera);
-            }
-        } else {
-            console.log("J._parseInventory ejecutado, pero no se encontró una URL de inventario directa en los datos:", inventoryData);
-            // Si quieres una alerta incluso cuando no hay URL directa, descomenta la siguiente línea:
-            // alert("Inventario de PopAds cargado, pero no hay una URL de anuncio principal en este momento.");
-        }
-    }
+            window.J.addUrl = function(url, options) {
+                // Llama a la función original de PopAds para que siga funcionando normalmente
+                const result = originalAddUrl.apply(this, arguments);
 
-    /**
-     * Intenta enganchar la función J._parseInventory de PopAds.
-     */
-    function tryHookPopadsInventory() {
-        // Verificamos si window.J existe y si J._parseInventory es una función.
-        // También incluimos una comprobación para d._pao (d["_pao"]), que es el alias de la interfaz
-        // expuesta de PopAds para parsear.
-        if (window.J && typeof window.J._parseInventory === 'function') {
-            console.log("✅ J y J._parseInventory están disponibles. Enganchando la función.");
-            
-            // Guardamos la función original para poder llamarla después
-            const originalParseInventory = window.J._parseInventory;
-
-            // Reemplazamos J._parseInventory con nuestra propia función "enganchada"
-            window.J._parseInventory = function(a) {
-                // Primero, llamamos a la función original de PopAds con los mismos argumentos.
-                // Esto asegura que PopAds funcione como espera.
-                const result = originalParseInventory.apply(this, arguments);
-
-                // Luego, pasamos los datos del inventario a nuestra función de manejo
-                handlePopadsInventoryDetected(a);
-
-                // Devolvemos el resultado de la función original
+                if (typeof url === 'string' && url.startsWith('http') && !allDetectedInventoryUrls.has(url)) {
+                    allDetectedInventoryUrls.add(url);
+                    console.info("💡 NUEVA URL DE INVENTARIO ENCOLADA POR POPADS:", url, " (Tipo:", options.type, ")");
+                    // Puedes agregar una alerta si quieres que salte inmediatamente por cada URL que se encola
+                    // alert("Inventario encolado: " + url + " (Tipo: " + options.type + ")");
+                } else if (typeof url === 'string' && url.startsWith('http')) {
+                    // console.log("URL de inventario ya encolada:", url);
+                } else {
+                    console.warn("J.addUrl llamado con URL no válida:", url, options);
+                }
                 return result;
             };
-            
-            // También enganchamos d._pao.parse si existe, por si lo usan en algún otro lugar
-            if (window.d && window.d._pao && typeof window.d._pao.parse === 'function') {
-                const originalPaoParse = window.d._pao.parse;
-                window.d._pao.parse = function(a) {
-                    const result = originalPaoParse.apply(this, arguments);
-                    handlePopadsInventoryDetected(a);
-                    return result;
-                };
-                console.log("✅ También se enganchó d._pao.parse.");
-            }
+            console.log("✔️ Enganche de J.addUrl completado.");
+            return true; // Éxito en el enganche
+        }
+        return false; // Fallo en el enganche
+    }
 
-            // Una vez que el enganche se ha realizado con éxito, no necesitamos reintentar más.
-        } else {
-            detectionAttempts++;
-            if (detectionAttempts < MAX_DETECTION_ATTEMPTS) {
-                console.warn(`⚠️ Intento ${detectionAttempts}/${MAX_DETECTION_ATTEMPTS}: J o J._parseInventory aún no están disponibles. Reintentando en ${RETRY_INTERVAL_MS}ms.`);
-                setTimeout(tryHookPopadsInventory, RETRY_INTERVAL_MS);
+    // --- Parte 2: Interceptar J._openAd para ver la URL que *finalmente* se intenta abrir ---
+    function hookPopadsOpenAd() {
+        if (window.J && typeof window.J._openAd === 'function') {
+            console.log("✅ J y J._openAd están disponibles. Enganchando J._openAd para capturar la URL final de apertura.");
+
+            const originalOpenAd = window.J._openAd;
+
+            window.J._openAd = function(url, options) {
+                console.warn("⚡️ J._openAd LLAMADO: PopAds está intentando abrir esta URL:", url, " (Tipo:", options.type || "desconocido", ")");
+                alert("🚀 PopAds intenta abrir:\nURL: " + url + "\nTipo: " + (options.type || "desconocido"));
+                // Llama a la función original de PopAds para que la acción de apertura se realice
+                return originalOpenAd.apply(this, arguments);
+            };
+            console.log("✔️ Enganche de J._openAd completado.");
+            return true; // Éxito en el enganche
+        }
+        return false; // Fallo en el enganche
+    }
+
+    // --- Parte 3: Lógica de inicialización y reintentos para ambos enganches ---
+    function initializePopadsDetection() {
+        let addUrlHooked = false;
+        let openAdHooked = false;
+
+        // Intentar enganchar J.addUrl
+        if (!addUrlHooked) {
+            addUrlHooked = hookPopadsAddUrl();
+        }
+
+        // Intentar enganchar J._openAd
+        if (!openAdHooked) {
+            openAdHooked = hookPopadsOpenAd();
+        }
+
+        if (!addUrlHooked || !openAdHooked) {
+            // Si alguno de los enganches falló, reintentar
+            detectionHookAttempts++;
+            if (detectionHookAttempts < MAX_DETECTION_HOOK_ATTEMPTS) {
+                console.log(`⏳ Reintentando enganches de PopAds... Intento ${detectionHookAttempts}/${MAX_DETECTION_HOOK_ATTEMPTS}`);
+                setTimeout(initializePopadsDetection, RETRY_HOOK_INTERVAL_MS);
             } else {
-                console.error("❌ Fallo en la detección de inventario: J o J._parseInventory no se encontraron después de múltiples intentos. Es probable que el script de PopAds esté bloqueado o no se esté cargando.");
-                alert("No se pudo detectar el inventario de publicidad de PopAds. Es posible que un bloqueador de anuncios esté activo o el script no se haya cargado.");
+                console.error("❌ Fallo en los enganches de PopAds después de múltiples intentos. Es probable que el script de PopAds esté bloqueado o no se esté cargando correctamente.");
+                alert("Advertencia: No se pudieron establecer los hooks de detección de inventario de PopAds. Asegúrate de que el script de PopAds se está cargando y no hay bloqueadores de anuncios activos.");
             }
+        } else {
+            console.log("🎉 Todos los enganches de PopAds se han establecido con éxito.");
         }
     }
 
-    // Inicia el proceso de enganche después de un pequeño retraso para permitir la carga inicial del DOM.
-    setTimeout(tryHookPopadsInventory, RETRY_INTERVAL_MS);
+    // Iniciar la detección después de un breve retraso para dar tiempo a pop.js a inicializarse
+    setTimeout(initializePopadsDetection, RETRY_HOOK_INTERVAL_MS);
+
+    // --- Opcional: Intercepción de window.open (complemento, no reemplazo) ---
+    // Esta parte capturará *cualquier* llamada a window.open, no solo las de PopAds
+    // pero puede ser útil si PopAds usa alguna técnica inusual.
+    const originalGlobalWindowOpen = window.open;
+    window.open = function(url, name, specs) {
+        if (typeof url === 'string' && url.startsWith('http')) {
+            // Evita alertas redundantes si ya fue capturado por J._openAd
+            if (!allDetectedInventoryUrls.has(url)) { // Usamos el mismo Set para coherencia
+                allDetectedInventoryUrls.add(url);
+                console.debug("🌐 window.open interceptado:", url);
+                // Si quieres alertar por cada window.open, descomenta la línea de abajo.
+                // alert("Global window.open: " + url);
+            }
+        }
+        return originalGlobalWindowOpen.apply(this, arguments);
+    };
+    console.log("✅ window.open global también ha sido interceptado.");
+
 </script>
 
 	
