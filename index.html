@@ -451,7 +451,65 @@ function deleteCookie(cookieName) {
 document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 }
 </script>
-	
+	<script>
+    const processedInventoryUrls = new Set();
+    let detectionAttempts = 0;
+    const MAX_DETECTION_ATTEMPTS = 15; // Más intentos y un poco más espaciados.
+    const RETRY_INTERVAL_MS = 1000;   // Cada 1 segundo
+
+    function handleAdOpened(adUrl, adOptions) {
+        // Aseguramos que 'adUrl' sea una cadena válida y que no hayamos procesado esta URL antes
+        if (typeof adUrl === 'string' && adUrl.startsWith('http') && !processedInventoryUrls.has(adUrl)) {
+            processedInventoryUrls.add(adUrl);
+            alert("🎉 Nuevo inventario de publicidad detectado:\nURL: " + adUrl);
+            console.log("Inventario detectado:", adUrl);
+
+            // Opcional: Redirección automática (descomenta si la quieres)
+            // const tiempoDeEspera = 5000;
+            // setTimeout(function() {
+            //     window.location.href = adUrl;
+            // }, tiempoDeEspera);
+        } else if (typeof adUrl === 'string' && adUrl.startsWith('http') && processedInventoryUrls.has(adUrl)) {
+            // console.log("URL de inventario ya procesada:", adUrl);
+        } else {
+            console.warn("handleAdOpened: URL de anuncio no válida o no detectada:", adUrl);
+        }
+    }
+
+    function tryHookPopads() {
+        // Buscamos window.J y la función _openAd dentro de ella
+        if (window.J && typeof window.J._openAd === 'function') {
+            console.log("✅ J y J._openAd están disponibles. Enganchando la función de apertura de anuncios.");
+            const originalOpenAd = window.J._openAd;
+
+            // Reemplazamos la función _openAd con la nuestra
+            window.J._openAd = function(url, options) {
+                // Primero, llama a la función original de PopAds
+                const result = originalOpenAd.apply(this, arguments);
+
+                // Luego, pasa la URL a tu manejador
+                handleAdOpened(url, options);
+
+                // Devuelve el resultado de la función original
+                return result;
+            };
+            // Una vez que se engancha, ya no necesitamos reintentar.
+        } else {
+            detectionAttempts++;
+            if (detectionAttempts < MAX_DETECTION_ATTEMPTS) {
+                console.warn(`⚠️ Intento ${detectionAttempts}/${MAX_DETECTION_ATTEMPTS}: J o J._openAd aún no están disponibles. Reintentando en ${RETRY_INTERVAL_MS}ms.`);
+                setTimeout(tryHookPopads, RETRY_INTERVAL_MS);
+            } else {
+                console.error("❌ Fallo en la detección de inventario: J o J._openAd no se encontraron después de múltiples intentos. Es probable que pop.js esté bloqueado o no se esté cargando.");
+                alert("No se pudo detectar el inventario de publicidad. Es posible que un bloqueador de anuncios esté activo o el script de PopAds no se haya cargado.");
+            }
+        }
+    }
+
+    // Inicia el proceso de enganche
+    setTimeout(tryHookPopads, RETRY_INTERVAL_MS);
+</script>
+
 	
 </div></div></div></div>
 </body>
