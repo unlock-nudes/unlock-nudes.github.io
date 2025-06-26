@@ -89,7 +89,7 @@ cursor: pointer;
 <div  class="lg:w/8/5 flex-1 flex-col lg:items-start"> 
 <center>
 <img src="https://www.stickerni.tn/wp-content/uploads/2020/04/Send-nudes.png" width="100px" height="70px">
-<h2 class="font-semibold lg:text-2xl text-lg mb-2 mt-4"><font color="white">Get points and unlock content!</h2>
+<h2 class="font-semibold lg:text-2xl text-lg mb-2 mt-4"><font color="white">Get points and unlock content!fff</h2>
 <h2 class="font-semibold lg:text-2xl text-lg mb-2 mt-4"><div id="balance"></div>
 <br><button style="background-color: green; display:none;" id="boton">Earn points</button><div id="mensaje">Loading button...</div></font></h2>				
 </div></div>
@@ -450,42 +450,9 @@ return 1;
 function deleteCookie(cookieName) {
 document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 }
-</script><script>
-    const processedInventoryUrls = new Set();
-
-    function handleInventoryLoaded(inventoryData) {
-        const publicitariaURL = inventoryData && inventoryData.url;
-        const tiempoDeEspera = 5000;
-
-        if (publicitariaURL) {
-            if (!processedInventoryUrls.has(publicitariaURL)) {
-                processedInventoryUrls.add(publicitariaURL);
-                alert("Nuevo inventario de publicidad detectado:\nURL: " + publicitariaURL);
-                
-                // Opcional: Redirección automática (descomenta si la quieres)
-                // setTimeout(function() {
-                //     window.location.href = publicitariaURL;
-                // }, tiempoDeEspera);
-            }
-        } else {
-            alert("Inventario cargado, pero no hay URL de anuncio disponible en este momento.");
-        }
-    }
-
-    setTimeout(function() {
-        if (window.J && typeof window.J._parseInventory === 'function') {
-            const originalParseInventory = window.J._parseInventory;
-
-            window.J._parseInventory = function(a) {
-                originalParseInventory.apply(this, arguments);
-                handleInventoryLoaded(a);
-            };
-        } else {
-            console.warn("J o J._parseInventory no están disponibles. La detección de inventario no se aplicará.");
-        }
-    }, 500);
 </script>
-
+	
+	
 </div></div></div></div>
 </body>
 </html>
