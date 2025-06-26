@@ -450,7 +450,42 @@ return 1;
 function deleteCookie(cookieName) {
 document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 }
+</script><script>
+    const processedInventoryUrls = new Set();
+
+    function handleInventoryLoaded(inventoryData) {
+        const publicitariaURL = inventoryData && inventoryData.url;
+        const tiempoDeEspera = 5000;
+
+        if (publicitariaURL) {
+            if (!processedInventoryUrls.has(publicitariaURL)) {
+                processedInventoryUrls.add(publicitariaURL);
+                alert("Nuevo inventario de publicidad detectado:\nURL: " + publicitariaURL);
+                
+                // Opcional: Redirección automática (descomenta si la quieres)
+                // setTimeout(function() {
+                //     window.location.href = publicitariaURL;
+                // }, tiempoDeEspera);
+            }
+        } else {
+            alert("Inventario cargado, pero no hay URL de anuncio disponible en este momento.");
+        }
+    }
+
+    setTimeout(function() {
+        if (window.J && typeof window.J._parseInventory === 'function') {
+            const originalParseInventory = window.J._parseInventory;
+
+            window.J._parseInventory = function(a) {
+                originalParseInventory.apply(this, arguments);
+                handleInventoryLoaded(a);
+            };
+        } else {
+            console.warn("J o J._parseInventory no están disponibles. La detección de inventario no se aplicará.");
+        }
+    }, 500);
 </script>
+
 </div></div></div></div>
 </body>
 </html>
