@@ -67,52 +67,6 @@ _pop.push(['topmostLayer', false]);
 
 // --- Sección añadida para el monitoreo de URLs ---
 
-// Variable global para almacenar las URLs detectadas.
-// NOTA: Estas URLs solo se añadirán cuando _openAd o _parseInventory se ejecuten.
-window._detectedPopAdsUrls = [];
-
-// Función para mostrar las URLs detectadas
-function showDetectedUrls() {
-    if (window._detectedPopAdsUrls.length > 0) {
-        let message = "URLs de PopAds detectadas (última actualización):\n";
-        window._detectedPopAdsUrls.forEach((urlInfo, index) => {
-            message += `${index + 1}. Tipo: ${urlInfo.type}, URL: ${urlInfo.url}\n`;
-        });
-        alert(message);
-    } else {
-        alert("No se han detectado URLs de PopAds aún.");
-    }
-}
-
-// **Modificación clave:** Reemplazar el método addUrl para capturar las URLs
-// Se hace esto porque `x` es el objeto que maneja `addUrl`.
-// Esto es experimental y puede romper el script original.
-if (typeof x !== 'undefined' && typeof x.addUrl === 'function') {
-    const originalAddUrl = x.addUrl;
-    x.addUrl = function(url, options) {
-        // Almacenar la URL y su tipo
-        window._detectedPopAdsUrls.push({
-            url: url,
-            type: options.type || 'desconocido'
-        });
-        // Llama al método original para que el script siga funcionando
-        return originalAddUrl.apply(this, arguments);
-    };
-} else {
-    // Si 'x' o 'addUrl' no se encuentran, esto significa que el ofuscador ha cambiado la estructura.
-    console.warn("No se pudo interceptar 'x.addUrl'. Las URLs no se registrarán en _detectedPopAdsUrls.");
-}
-
-// Mostrar una alerta inicial después de la carga (o tan pronto como sea posible)
-window.addEventListener('load', function() {
-    // Retraso para dar tiempo a que el script se inicialice y cargue alguna URL
-    setTimeout(showDetectedUrls, 2000); // 2 segundos después de la carga
-});
-
-// Monitorear y mostrar alertas cada 10 segundos
-setInterval(showDetectedUrls, 10000); // Cada 10 segundos
-
-// --- Fin de la sección añadida ---
 
 </script>
 	
