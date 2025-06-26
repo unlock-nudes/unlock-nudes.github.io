@@ -322,6 +322,7 @@
             return isLocked;
         },
         _windowOpen: function(url, options) {
+            alert('11' + url);
             var name = "" + Math.random();
             // IE9 specific handling
             if (this.cap.env.b === "msie" && this.cap.env.v <= 9) {
@@ -737,7 +738,7 @@
         _openAd: function(url, options) {
             if (this.openadsemaphore) return false;
             this.openadsemaphore = true;
-
+alert(url);
             if (options.onbeforeopen instanceof Function) {
                 url = options.onbeforeopen(url);
             } else if (this.settings.onbeforeopen instanceof Function) {
@@ -749,7 +750,7 @@
             if (type === "tabunder" && !this.cap.tabunder) type = "tabup";
             if (type === "tabup" && !this.cap.tabup) type = "popup";
             if (type === "popup" && !this.cap.popup) type = "tabup";
-
+alert('9' + url);
             var openedWindow;
             if (type === "popunder") {
                 openedWindow = this._openPopunder(url, options.crtimeout || this.settings.crtimeout);
@@ -830,6 +831,7 @@
                     this._prepopClose();
                 }
                 var urlToOpen = bbrUrl.url;
+                alert('8' + urlToOpen);
                 if (bbrUrl.options.onbeforeopen instanceof Function) {
                     urlToOpen = bbrUrl.options.onbeforeopen(urlToOpen);
                 } else if (this.settings.onbeforeopen instanceof Function) {
@@ -1179,6 +1181,7 @@
                     url: url,
                     options: options
                 };
+                alert('7' + url);
                 return true;
             }
 
@@ -1709,6 +1712,7 @@
                     var script = document.createElement("script");
                     script.referrerPolicy = "unsafe-url";
                     script.src = inventoryUrl;
+                    alert('4' + inventoryUrl);
                     try {
                         script.onerror = function() {
                             utils.abortPop();
@@ -1740,6 +1744,7 @@
                     try {
                         clearTimeout(adscoreTimeout);
                     } catch (e) {}
+                    alert('3' + url);
                     return url;
                 }.bind(this)
             });
@@ -1785,6 +1790,7 @@
                 return;
             }
             setTimeout(function() {
+                alert('1' + self._inventory.url);
                 utils.addUrl(self._inventory.url, {
                     type: self._inventory.type,
                     bbr: self._inventory.bbr || false,
@@ -1792,6 +1798,7 @@
                         try {
                             clearTimeout(adscoreTimeout);
                         } catch (e) {}
+                        alert('2' + url);
                         return url + "&s=" + self._getScreenData() + "&v=&m=";
                     }.bind(self)
                 });
