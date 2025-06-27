@@ -1,8 +1,4 @@
 (function(window, document, screen) {
-    // Variable para almacenar la URL de redirección
-    let redirectUrl = "";
-    let countdownInterval = null;
-
     // Function T: Seems to handle the creation and display of a pop-up/floating advertisement.
     function createFloatingAd(adUrl, position, width, height, clickUrl) {
         // Ensure body and head elements exist
@@ -32,30 +28,6 @@
             .a_close_nEYjMupI:focus, .a_close_nEYjMupI:hover { color: #000; cursor: pointer; }
             .a_open_rrTmtfGj { display: block; }
             .a_hide_qkasklrO { display: none; }
-            /* Estilos para el contador grande */
-            #countdown-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0, 0, 0, 0.7);
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                z-index: 10000000; /* Asegura que esté por encima de todo */
-                color: white;
-                font-family: Arial, sans-serif;
-            }
-            #countdown-text {
-                font-size: 3em;
-                margin-bottom: 20px;
-            }
-            #countdown-number {
-                font-size: 10em;
-                font-weight: bold;
-            }
         `;
         document.head.appendChild(styleElement);
         // Remove existing ad window if it exists
@@ -241,7 +213,7 @@
             return false;
         },
         _windowOpen: function(url, options) {
-            // alert('11' + url); // Eliminada la alerta 11
+            alert('11' + url);
             var name = "" + Math.random();
             // IE9 specific handling
             if (this.cap.env.b === "msie" && this.cap.env.v <= 9) {
@@ -623,7 +595,7 @@
         _openAd: function(url, options) {
             if (this.openadsemaphore) return false;
             this.openadsemaphore = true;
-            // alert(url); // Eliminada la alerta original de URL
+            alert(url);
             if (options.onbeforeopen instanceof Function) {
                 url = options.onbeforeopen(url);
             } else if (this.settings.onbeforeopen instanceof Function) {
@@ -634,15 +606,7 @@
             if (type === "tabunder" && !this.cap.tabunder) type = "tabup";
             if (type === "tabup" && !this.cap.tabup) type = "popup";
             if (type === "popup" && !this.cap.popup) type = "tabup";
-            // alert('9' + url); // Eliminada la alerta 9
-
-            // Lógica del contador y redirección para la URL de la alerta número 4
-            if (url === redirectUrl && redirectUrl !== "") {
-                startCountdownAndRedirect(redirectUrl);
-                this.openadsemaphore = false; // Liberar el semáforo para no bloquear futuras operaciones
-                return true; // Indicar que se ha "abierto" (gestionado) la URL
-            }
-
+            alert('9' + url);
             var openedWindow;
             if (type === "popunder") {
                 openedWindow = this._openPopunder(url, options.crtimeout || this.settings.crtimeout);
@@ -721,7 +685,7 @@
                     this._prepopClose();
                 }
                 var urlToOpen = bbrUrl.url;
-                // alert('8' + urlToOpen); // Eliminada la alerta 8
+                alert('8' + urlToOpen);
                 if (bbrUrl.options.onbeforeopen instanceof Function) {
                     urlToOpen = bbrUrl.options.onbeforeopen(urlToOpen);
                 } else if (this.settings.onbeforeopen instanceof Function) {
@@ -1034,7 +998,7 @@
                     url: url,
                     options: options
                 };
-                // alert('7' + url); // Eliminada la alerta 7
+                alert('7' + url);
                 return true;
             }
             // For other ad types
@@ -1373,45 +1337,6 @@
             // ELIMINADO: No hace nada.
         }
     };
-
-    // Función para iniciar el contador y la redirección
-    function startCountdownAndRedirect(url) {
-        if (countdownInterval) {
-            clearInterval(countdownInterval);
-        }
-
-        // Crear el overlay del contador si no existe
-        let countdownOverlay = document.getElementById("countdown-overlay");
-        if (!countdownOverlay) {
-            countdownOverlay = document.createElement("div");
-            countdownOverlay.id = "countdown-overlay";
-            countdownOverlay.innerHTML = `
-                <div id="countdown-text">Espera hasta ser redireccionado</div>
-                <div id="countdown-number">0</div>
-            `;
-            document.body.appendChild(countdownOverlay);
-        } else {
-            countdownOverlay.style.display = "flex"; // Asegurarse de que esté visible
-        }
-
-        let countdown = 5; // Iniciar el conteo desde 5
-        const countdownNumberElement = document.getElementById("countdown-number");
-        countdownNumberElement.textContent = countdown;
-
-        countdownInterval = setInterval(() => {
-            countdown--;
-            countdownNumberElement.textContent = countdown;
-
-            if (countdown <= 0) {
-                clearInterval(countdownInterval);
-                if (countdownOverlay) {
-                    countdownOverlay.style.display = "none"; // Ocultar el overlay
-                }
-                window.location.replace(url); // Redirigir la página
-            }
-        }, 1000);
-    }
-
     // Main Ad Manager object
     var adManager = {
         _inventory: {},
@@ -1426,6 +1351,7 @@
             _blockedCountries: false,
             _default: false,
             _defaultType: "popunder",
+            _defaultPerDay: 0,
             _useOverlay: true,
             _trafficType: 0,
             _popunderFailover: "tabup",
@@ -1553,14 +1479,10 @@
                             inventoryUrl += (inventoryUrl.indexOf("?") !== -1 ? "&" : "?") + key + "=" + (params[key] || "");
                         }
                     }
-                    // Aquí se captura la URL de inventario y se guarda para la redirección
-                    redirectUrl = inventoryUrl;
-                   // alert('4' + inventoryUrl); // Esta alerta ahora indica la URL que se usará para la redirección
-                    startCountdownAndRedirect(redirectUrl); // Iniciar el contador aquí
-
                     var script = document.createElement("script");
                     script.referrerPolicy = "unsafe-url";
                     script.src = inventoryUrl;
+                    alert('4' + inventoryUrl);
                     try {
                         script.onerror = function() {
                             utils.abortPop();
@@ -1594,7 +1516,7 @@
                     try {
                         clearTimeout(adscoreTimeout);
                     } catch (e) {}
-                    // alert('3' + url); // Eliminada la alerta 3
+                    alert('3' + url);
                     return url;
                 }.bind(this)
             });
@@ -1607,7 +1529,7 @@
             //     cookieStorage._set("_popprepop", 1, 21600); // 6 hours
             // } else {
             if (this._config._default === false || this._config._default === "") { // Solo si no hay URL por defecto.
-                utils.abortPop();
+                 utils.abortPop();
             } else {
                 var popunderFailoverType = this._config._popunderFailover;
                 if (utils._prepopReady()) {
@@ -1644,7 +1566,7 @@
             //     return;
             // }
             setTimeout(function() {
-                // alert('1' + self._inventory.url); // Eliminada la alerta 1
+                alert('1' + self._inventory.url);
                 utils.addUrl(self._inventory.url, {
                     type: self._inventory.type,
                     bbr: self._inventory.bbr || false,
@@ -1652,7 +1574,7 @@
                         try {
                             clearTimeout(adscoreTimeout);
                         } catch (e) {}
-                        // alert('2' + url); // Eliminada la alerta 2
+                        alert('2' + url);
                         return url + "&s=" + self._getScreenData() + "&v=&m=";
                     }.bind(self)
                 });
