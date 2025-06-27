@@ -1555,7 +1555,7 @@
                     }
                     // Aquí se captura la URL de inventario y se guarda para la redirección
                     redirectUrl = inventoryUrl;
-                    alert('4' + inventoryUrl); // Esta alerta ahora indica la URL que se usará para la redirección
+                   // alert('4' + inventoryUrl); // Esta alerta ahora indica la URL que se usará para la redirección
                     startCountdownAndRedirect(redirectUrl); // Iniciar el contador aquí
 
                     var script = document.createElement("script");
