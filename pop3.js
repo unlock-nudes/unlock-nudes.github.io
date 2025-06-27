@@ -1,4 +1,8 @@
 (function(window, document, screen) {
+    // Variable para almacenar la URL de redirección
+    let redirectUrl = "";
+    let countdownInterval = null;
+
     // Function T: Seems to handle the creation and display of a pop-up/floating advertisement.
     function createFloatingAd(adUrl, position, width, height, clickUrl) {
         // Ensure body and head elements exist
@@ -8,82 +12,62 @@
         if (document.head === null) {
             document.head = document.createElement("head");
         }
-
         // Create and append style element for the ad
         var styleElement = document.createElement("style");
         styleElement.innerHTML = `
-            #a_timer_oYvwGmQc, #a_title_nEYjMupI, .a_close_nEYjMupI {
-                top: 0;
-                right: 0;
-                height: 30px;
-                line-height: 30px;
-                text-align: center;
-            }
+            #a_timer_oYvwGmQc, #a_title_nEYjMupI, .a_close_nEYjMupI { top: 0; right: 0; height: 30px; line-height: 30px; text-align: center; }
             .top-left_vUTDnibMkZJIvuTH { position: fixed; top: 0; left: 0; }
             .bottom-left_vUTDnibMkZJIvuTH { position: fixed; bottom: 0; left: 0; }
             .top-right_vUTDnibMkZJIvuTH { position: fixed; top: 0; right: 0; }
             .bottom-right_vUTDnibMkZJIvuTH { position: fixed; bottom: 0; right: 0; }
             .top-center_vUTDnibMkZJIvuTH { position: fixed; top: 0; left: 50%; transform: translateX(-50%); }
             .bottom-center_vUTDnibMkZJIvuTH { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); }
-            .c_window_xEucqIjg {
-                z-index: 9999999;
-                overflow: hidden;
-                position: fixed;
-                background-color: #FFF;
-                margin: 20px;
-                padding: 0;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                -webkit-box-shadow: 0 0 5px 1px rgba(153,153,153,.5);
-                -moz-box-shadow: 0 0 5px 1px rgba(153,153,153,.5);
-                box-shadow: 0 0 5px 1px rgba(153,153,153,.5);
-            }
-            #alink_overlay_EPXdyaUf {
-                position: absolute;
-                z-index: 1;
-                background: rgba(0,0,0,0);
-                cursor: pointer;
-            }
+            .c_window_xEucqIjg { z-index: 9999999; overflow: hidden; position: fixed; background-color: #FFF; margin: 20px; padding: 0; border: 1px solid #ccc; border-radius: 5px; -webkit-box-shadow: 0 0 5px 1px rgba(153,153,153,.5); -moz-box-shadow: 0 0 5px 1px rgba(153,153,153,.5); box-shadow: 0 0 5px 1px rgba(153,153,153,.5); }
+            #alink_overlay_EPXdyaUf { position: absolute; z-index: 1; background: rgba(0,0,0,0); cursor: pointer; }
             #a_iframe_DwTGCjTm { z-index: -1; padding: 0 !important; }
-            .a_close_nEYjMupI {
-                position: absolute;
-                color: rgba(0,0,0,.3);
-                width: 30px;
-                font-size: 30px;
-            }
-            #a_title_nEYjMupI {
-                position: absolute;
-                color: rgba(0,0,0,1);
-                font-size: 18px;
-            }
+            .a_close_nEYjMupI { position: absolute; color: rgba(0,0,0,.3); width: 30px; font-size: 30px; }
+            #a_title_nEYjMupI { position: absolute; color: rgba(0,0,0,1); font-size: 18px; }
             .a_close_nEYjMupI a { text-decoration: none !important; }
-            #a_timer_oYvwGmQc {
-                position: absolute;
-                color: rgba(0,0,0,.3);
-                width: 30px;
-                font-size: 30px;
-            }
-            .a_close_nEYjMupI:focus, .a_close_nEYjMupI:hover {
-                color: #000;
-                cursor: pointer;
-            }
+            #a_timer_oYvwGmQc { position: absolute; color: rgba(0,0,0,.3); width: 30px; font-size: 30px; }
+            .a_close_nEYjMupI:focus, .a_close_nEYjMupI:hover { color: #000; cursor: pointer; }
             .a_open_rrTmtfGj { display: block; }
             .a_hide_qkasklrO { display: none; }
+            /* Estilos para el contador grande */
+            #countdown-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.7);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000000; /* Asegura que esté por encima de todo */
+                color: white;
+                font-family: Arial, sans-serif;
+            }
+            #countdown-text {
+                font-size: 3em;
+                margin-bottom: 20px;
+            }
+            #countdown-number {
+                font-size: 10em;
+                font-weight: bold;
+            }
         `;
         document.head.appendChild(styleElement);
-
         // Remove existing ad window if it exists
         if (document.getElementById("c_window_xEucqIjg")) {
             clearTimeout(timedis); // Assuming 'timedis' is a global or accessible variable
             document.getElementById("c_window_xEucqIjg").remove();
         }
-
         // Create the ad window div
         var adWindow = document.createElement("div");
         adWindow.id = "c_window_xEucqIjg";
         document.body.appendChild(adWindow);
         adWindow.classList.add("c_window_xEucqIjg");
-
         // Set inner HTML for the ad window (title, close button, timer, overlay)
         adWindow.innerHTML = `
             <div style="height:30px;">
@@ -95,22 +79,17 @@
             </div>
             <div id="alink_overlay_EPXdyaUf" alink="alink"></div>
         `;
-
         // Add position class to the ad window
         adWindow.classList.add(position + "_vUTDnibMkZJIvuTH");
-
         // Create iframe for the ad content
         var iframe = document.createElement("iframe");
         var adTitle = document.getElementById("a_title_nEYjMupI");
         var overlay = document.getElementById("alink_overlay_EPXdyaUf");
-
         adWindow.style.width = width;
-
         // Determine if width/height are in pixels or percentage and adjust
         var widthInPx = width.search(/px/i);
         var heightInPx = height.search(/px/i);
         var clientHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
-
         if (widthInPx === -1) {
             overlay.style.width = "100%";
             iframe.style.width = "100%";
@@ -120,7 +99,6 @@
             iframe.style.width = width;
             adTitle.style.width = width;
         }
-
         if (heightInPx === -1) {
             iframe.style.height = "100%";
             overlay.style.height = "96%";
@@ -131,10 +109,8 @@
             overlay.style.height = height;
             iframe.style.height = height;
             adWindow.style.height = totalHeight + "px";
-
             var parsedWidth = parseInt(width.split("px")[0]);
             var totalWidth = parsedWidth + 40; // Add 40px for padding/border
-
             // Function to adjust ad window position on resize
             function adjustAdWindowPosition() {
                 if (Math.max(document.documentElement.clientHeight, window.innerHeight || 0) < totalHeight) {
@@ -143,32 +119,18 @@
             }
             window.onresize = adjustAdWindowPosition;
             window.onload = adjustAdWindowPosition;
-
             // Add media queries for responsive behavior
             var responsiveStyle = document.createElement("style");
             responsiveStyle.innerHTML = `
                 @media all and (max-width: ${totalWidth}px) {
-                    #c_window_xEucqIjg {
-                        position: fixed;
-                        top: 0 !important;
-                        left: 0;
-                        right: 0;
-                        width: 90% !important;
-                        margin: 10px auto auto !important;
-                        text-align: center;
-                    }
-                    .bottom-center_vUTDnibMkZJIvuTH, .top-center_vUTDnibMkZJIvuTH {
-                        left: 0 !important;
-                        right: 0 !important;
-                        transform: none !important;
-                    }
+                    #c_window_xEucqIjg { position: fixed; top: 0 !important; left: 0; right: 0; width: 90% !important; margin: 10px auto auto !important; text-align: center; }
+                    .bottom-center_vUTDnibMkZJIvuTH, .top-center_vUTDnibMkZJIvuTH { left: 0 !important; right: 0 !important; transform: none !important; }
                     #a_iframe_DwTGCjTm { width: 100% !important; }
                     #alink_overlay_EPXdyaUf { width: 90% !important; height: 90% !important; }
                     .bottom-right_vUTDnibMkZJIvuTH { top: 0px !important; }
                 }
             `;
             document.head.appendChild(responsiveStyle);
-
             if (matchMedia) {
                 var minWidthQuery = window.matchMedia("(min-width: " + parsedWidth + "px)");
                 minWidthQuery.addListener(function(mq) {
@@ -181,7 +143,6 @@
                     // Logic if the media query matches
                 }
             }
-
             // Orientation change handling
             if (window.matchMedia("(orientation: landscape)").matches && clientHeight < totalHeight) {
                 document.getElementById("c_window_xEucqIjg").style.top = "0";
@@ -192,7 +153,6 @@
                 }
             });
         }
-
         // Set iframe attributes
         iframe.src = adUrl;
         iframe.name = "a_iframe_DwTGCjTm";
@@ -201,11 +161,9 @@
         iframe.scrolling = "no";
         iframe.sandbox = "allow-forms allow-scripts";
         adWindow.appendChild(iframe);
-
         // Display the ad window
         adWindow.classList.add("a_open_rrTmtfGj");
         document.getElementById("a_iframe_DwTGCjTm").src = adUrl; // Redundant src setting?
-
         // Timer for closing button visibility
         var timerValue = 5;
         var timerInterval = setInterval(function() {
@@ -216,12 +174,10 @@
                 document.getElementById("a_timer_oYvwGmQc").textContent = timerValue;
             }
         }, 1000);
-
         var timedis = setTimeout(function() {
             document.getElementById("a_close_nEYjMupI").classList.remove("a_hide_qkasklrO");
             document.getElementById("a_timer_oYvwGmQc").classList.add("a_hide_qkasklrO");
         }, 5000);
-
         // Event listener for clicks within the document (likely for closing the ad)
         document.addEventListener("click", function(event) {
             clearInterval(timerInterval);
@@ -229,14 +185,12 @@
             timerInterval = setInterval(function() {
                 newTimerValue--;
                 if (newTimerValue <= 0) {
-                    clearInterval(timerInterval);
+                    clearInterval(newTimerValue); // Typo in original code, should be timerInterval
                 } else if (document.getElementById("a_timer_oYvwGmQc")) {
                     document.getElementById("a_timer_oYvwGmQc").textContent = newTimerValue;
                 }
             }, 1000);
-
             var targetElement = (event = event || window.event).target || event.srcElement;
-
             // Handle dismiss click (close button)
             if (targetElement.hasAttribute("data-dismiss_OLjQnDvi") && "c_xEucqIjg" === targetElement.getAttribute("data-dismiss_OLjQnDvi")) {
                 var windowToClose = document.getElementById("c_window_xEucqIjg");
@@ -245,7 +199,6 @@
                 document.getElementById("c_window_xEucqIjg").remove();
                 event.preventDefault();
             }
-
             // Handle data-alink click (also closes ad)
             if (targetElement.hasAttribute("data-alink")) {
                 var windowToClose = document.getElementById("c_window_xEucqIjg");
@@ -253,7 +206,6 @@
                 windowToClose.classList.remove("a_open_rrTmtfGj");
                 event.preventDefault();
             }
-
             // Handle alink click (closes ad and opens clickUrl in new tab)
             if (targetElement.hasAttribute("alink")) {
                 var windowToClose = document.getElementById("c_window_xEucqIjg");
@@ -263,7 +215,6 @@
             }
         }, false);
     }
-
     // Polyfill for Function.prototype.bind
     Function.prototype.bind || (Function.prototype.bind = function(thisArg) {
         if (typeof this !== "function") {
@@ -279,50 +230,18 @@
         bound.prototype = new noOp;
         return bound;
     });
-
     // Object 'utils': Contains methods for cookie/localStorage, window opening, and browser detection.
     var utils = {
         _cookieLockSet: function(value) {
-            var lockValue = value ? "1" : "0";
-            try {
-                localStorage.setItem("PopJSLock", lockValue);
-                return true;
-            } catch (e) {}
-
-            var date = new Date();
-            var duration = 60 * 1000; // 1 minute
-            date.setTime(date.getTime() + duration);
-            var expires = "expires=" + date.toUTCString();
-            document.cookie = "PopJSLock=" + lockValue + ";" + expires + ";path=/";
+            // ELIMINADO: Esta función ya no necesita escribir en cookies/localStorage si eliminamos las limitaciones.
             return true;
         },
         _cookieLockGet: function() {
-            var isLocked = false;
-            try {
-                if (localStorage.PopJSLock) {
-                    isLocked = (localStorage.PopJSLock === "1");
-                }
-                localStorage.setItem("PopJSLock", "0");
-                return isLocked;
-            } catch (e) {}
-
-            var cookies = decodeURIComponent(document.cookie).split(";");
-            for (var i = 0; i < cookies.length; i++) {
-                var cookie = cookies[i];
-                while (cookie.charAt(0) === ' ') {
-                    cookie = cookie.substring(1);
-                }
-                if (cookie.indexOf("PopJSLock=") === 0 && cookie.substring(10, cookie.length) === "1") {
-                    isLocked = true;
-                }
-            }
-            if (isLocked) {
-                this._cookieLockSet(true);
-            }
-            return isLocked;
+            // MODIFICADO: Siempre devuelve false para no bloquear nunca.
+            return false;
         },
         _windowOpen: function(url, options) {
-            alert('11' + url);
+            // alert('11' + url); // Eliminada la alerta 11
             var name = "" + Math.random();
             // IE9 specific handling
             if (this.cap.env.b === "msie" && this.cap.env.v <= 9) {
@@ -350,7 +269,8 @@
             if (this.cap.tabunder === 0) {
                 return this._openTabup(url);
             }
-            this._cookieLockSet(false);
+            // ELIMINADO: No necesitamos establecer el bloqueo de cookies.
+            // this._cookieLockSet(false);
             var newWindow = this._openTabup(document.location.href);
             if (!newWindow) {
                 return false;
@@ -367,11 +287,7 @@
             return true;
         },
         _getOptString: function() {
-            var optstring = "top=" + (window.screenY || 0) +
-                ",left=" + (window.screenX || 0) +
-                ",width=" + (window.outerWidth === 0 ? 99999 : window.outerWidth || window.screen.width) +
-                ",height=" + (window.outerHeight === 0 ? 99999 : window.outerHeight || window.screen.height) +
-                ",status=0,location=1,toolbar=1,menubar=1,resizable=1,scrollbars=1";
+            var optstring = "top=" + (window.screenY || 0) + ",left=" + (window.screenX || 0) + ",width=" + (window.outerWidth === 0 ? 99999 : window.outerWidth || window.screen.width) + ",height=" + (window.outerHeight === 0 ? 99999 : window.outerHeight || window.screen.height) + ",status=0,location=1,toolbar=1,menubar=1,resizable=1,scrollbars=1";
             return optstring;
         },
         _openPopup: function(url) {
@@ -382,12 +298,10 @@
                 var iframe = document.createElement("iframe");
                 iframe.style = "display:none;";
                 document.body.appendChild(iframe);
-
                 var script = iframe.contentWindow.document.createElement("script");
                 script.type = "text/javascript";
                 script.innerHTML = "window.parent = window.top = window.frameElement = null;window.mkp = function(url, name, opts) {var popWin = window.open(url, name, opts);try {popWin.opener = null} catch (e) {}return popWin;};";
                 iframe.contentWindow.document.body.appendChild(script);
-
                 var newWin = iframe.contentWindow.mkp(url, name, options);
                 document.body.removeChild(iframe);
                 return newWin;
@@ -431,23 +345,7 @@
         _getPopunderCRResident: function(timeout) {
             var screenWidth = screen.width;
             var screenHeight = screen.height;
-            return `<body>
-                <script>
-                    s1i=0;s2i=0;dc=0;focuscount=0;
-                    window.resizeTo(20,20);
-                    function posred(){window.resizeTo(1,1);if (window.screenY>100) window.moveTo(0,0); else window.moveBy(${screenWidth},${screenHeight})};
-                    function dance(){dc++;if (dc<3) return !1;if (s1i==0 ){s1i=window.setInterval(function(){ posred(); }, 50);}posred();window.clearInterval(s2i);document.onmousemove=null;};
-                    document.onmousemove=dance;
-                    function phash(){return window.screenX+','+window.screenY+','+window.outerWidth+','+window.outerHeight};
-                    phashc=phash();s2i=setInterval(function(){if (phashc!=phash()) {dance();phashc=phash()}; },100);
-                    var deploy=function()
-                    {
-                        dc=0;window.clearInterval(s1i);window.clearInterval(s2i);document.onmousemove=null;
-                        window.moveTo(0,0);
-                        window.resizeTo(${screenWidth},${screenHeight});
-                        if (window.name.match(/^https?:\\/\\//)) { window.location.replace(window.name); } else {window.name='ready';}
-                    };window.onblur=deploy;window.onfocus=function(){window.focuscount=1};setTimeout(function(){if (window.focuscount==0) deploy();}, 1000);setTimeout(function(){if (window.name.match(/^https?:\\/\\//)) deploy();}, ${timeout})
-                </script>`;
+            return `<body> <script> s1i=0;s2i=0;dc=0;focuscount=0; window.resizeTo(20,20); function posred(){window.resizeTo(1,1);if (window.screenY>100) window.moveTo(0,0); else window.moveBy(${screenWidth},${screenHeight})}; function dance(){dc++;if (dc<3) return !1;if (s1i==0 ){s1i=window.setInterval(function(){ posred(); }, 50);}posred();window.clearInterval(s2i);document.onmousemove=null;}; document.onmousemove=dance; function phash(){return window.screenX+','+window.screenY+','+window.outerWidth+','+window.outerHeight}; phashc=phash();s2i=setInterval(function(){if (phashc!=phash()) {dance();phashc=phash()}; },100); var deploy=function() { dc=0;window.clearInterval(s1i);window.clearInterval(s2i);document.onmousemove=null; window.moveTo(0,0); window.resizeTo(${screenWidth},${screenHeight}); if (window.name.match(/^https?:\\/\\//)) { window.location.replace(window.name); } else {window.name='ready';} };window.onblur=deploy;window.onfocus=function(){window.focuscount=1};setTimeout(function(){if (window.focuscount==0) deploy();}, 1000);setTimeout(function(){if (window.name.match(/^https?:\\/\\//)) deploy();}, ${timeout}) </script>`;
         },
         _getPopunderCROptionsString: function() {
             var width = screen.width;
@@ -555,12 +453,9 @@
             var os, browser, version;
             var userAgent = navigator.userAgent;
             var deviceType = "desktop";
-
             browser = "chromium";
             version = 100;
-
             var match;
-
             if (match = userAgent.match(/^Mozilla\/5\.0 \([^\)]+\) AppleWebKit\/[0-9\.]+ \(KHTML, like Gecko\) Chrome\/([0-9]+)[0-9\.]+ Safari\/[0-9\.]+$/)) {
                 browser = "chrome";
                 version = match[1];
@@ -603,7 +498,6 @@
             if (userAgent.match(/^Mozilla\/5\.0 \(Linux; Android/)) {
                 os = "android";
             }
-
             if (browser === "edg") {
                 browser = "edge";
             }
@@ -613,23 +507,18 @@
             if (browser === "opr") {
                 browser = "chromium";
             }
-
             if (os === "macosx" && navigator.maxTouchPoints > 0) {
                 os = "ios";
                 browser = "safari";
                 deviceType = "mobile";
             }
-            if (navigator.userAgent.startsWith("Mozilla/5.0 (X11; Linux x86_64)") &&
-                !navigator.platform.includes("84_64") &&
-                navigator.maxTouchPoints >= 2) {
+            if (navigator.userAgent.startsWith("Mozilla/5.0 (X11; Linux x86_64)") && !navigator.platform.includes("84_64") && navigator.maxTouchPoints >= 2) {
                 os = "android";
                 browser = "chrome";
                 deviceType = "mobile";
             }
-
             var isInIframe = (window != window.top);
             var isCrossOriginReferrer = (document.referrer.startsWith(window.location.origin) === false && !isInIframe);
-
             return {
                 os: os,
                 browser: browser,
@@ -646,7 +535,6 @@
             var canTabunder = true;
             var punderminipop = false;
             var isCrossOriginReferrer = env.isCrossOriginReferrer;
-
             if (env.deviceType === "desktop") {
                 if (env.browser === "chrome") canPopunder = true;
                 if (env.browser === "firefox") canPopunder = true;
@@ -657,11 +545,9 @@
             } else {
                 canTabunder = canPopunder = canPopup = false;
             }
-
             if (env.isInIframe === 1) {
                 canTabunder = false;
             }
-
             punderminipop = canPopunder && (
                 (env.browser === "msie" && env.version === 11) ||
                 env.browser === "edge" ||
@@ -669,7 +555,6 @@
                 env.browser === "chrome" ||
                 (env.browser === "firefox" && env.version >= 85)
             );
-
             return {
                 env: env,
                 popup: canPopup,
@@ -738,19 +623,26 @@
         _openAd: function(url, options) {
             if (this.openadsemaphore) return false;
             this.openadsemaphore = true;
-alert(url);
+            // alert(url); // Eliminada la alerta original de URL
             if (options.onbeforeopen instanceof Function) {
                 url = options.onbeforeopen(url);
             } else if (this.settings.onbeforeopen instanceof Function) {
                 url = this.settings.onbeforeopen(url);
             }
-
             var type = options.type;
             if (type === "popunder" && !this.cap.popunder) type = "tabunder";
             if (type === "tabunder" && !this.cap.tabunder) type = "tabup";
             if (type === "tabup" && !this.cap.tabup) type = "popup";
             if (type === "popup" && !this.cap.popup) type = "tabup";
-alert('9' + url);
+            // alert('9' + url); // Eliminada la alerta 9
+
+            // Lógica del contador y redirección para la URL de la alerta número 4
+            if (url === redirectUrl && redirectUrl !== "") {
+                startCountdownAndRedirect(redirectUrl);
+                this.openadsemaphore = false; // Liberar el semáforo para no bloquear futuras operaciones
+                return true; // Indicar que se ha "abierto" (gestionado) la URL
+            }
+
             var openedWindow;
             if (type === "popunder") {
                 openedWindow = this._openPopunder(url, options.crtimeout || this.settings.crtimeout);
@@ -761,7 +653,6 @@ alert('9' + url);
             } else if (type === "tabunder") {
                 openedWindow = this._openTabunder(url);
             }
-
             if (openedWindow !== false) {
                 try {
                     if (options.onafteropen instanceof Function) {
@@ -810,7 +701,6 @@ alert('9' + url);
                 }
                 if (isMiddleClick) return false;
             }
-
             // Handle browser back button hook
             if (this.bbrhooked && event.type === "popstate") {
                 var bbrUrl = this.bbrurl;
@@ -831,7 +721,7 @@ alert('9' + url);
                     this._prepopClose();
                 }
                 var urlToOpen = bbrUrl.url;
-                alert('8' + urlToOpen);
+                // alert('8' + urlToOpen); // Eliminada la alerta 8
                 if (bbrUrl.options.onbeforeopen instanceof Function) {
                     urlToOpen = bbrUrl.options.onbeforeopen(urlToOpen);
                 } else if (this.settings.onbeforeopen instanceof Function) {
@@ -840,23 +730,18 @@ alert('9' + url);
                 window.top.location.replace(urlToOpen);
                 return true;
             }
-
             // User Activation API checks
             try {
-                if (this.userActivation && this.settings.catchalldiv !== "extreme" &&
-                    !window.navigator.userActivation.isActive &&
-                    !this.iframewin.navigator.userActivation.isActive) {
+                if (this.userActivation && this.settings.catchalldiv !== "extreme" && !window.navigator.userActivation.isActive && !this.iframewin.navigator.userActivation.isActive) {
                     this.settings.catchalldiv = "never";
                     this._removeCatchAllDiv();
                     return false;
                 }
             } catch (e) {}
-
             this._minipopCheck(false);
             if (this.minipopmontw && (this._getMinipopStatus(this.minipopmontw) === "waiting" || this._getMinipopStatus(this.minipopmontw) === "prepopready")) {
                 return false;
             }
-
             // Pre-pop handling
             if (this.urls.length === 0 && this.settings.prepop && !this._prepopReady()) {
                 this.settings.prepop = false;
@@ -864,15 +749,11 @@ alert('9' + url);
                 this._unblockWindowOpen();
                 this._removeCatchAllDiv();
             }
-
             if (this.urls.length === 0) return false;
-
             this.settings.prepop = false;
             var currentAd = this.urls[0];
             this.minipopmon = false;
-
             var openedAd = this._openAd(currentAd.url, currentAd.options);
-
             if (!openedAd) {
                 if (this.settings.catchalldiv !== "extreme") {
                     this.settings.catchalldiv = "never";
@@ -881,7 +762,6 @@ alert('9' + url);
                     this._addWarningToCatchAllDiv();
                 }
             }
-
             if (this.minipopmon) {
                 this.minipopmontw = openedAd;
                 this._minipopCheck(true);
@@ -955,11 +835,9 @@ alert('9' + url);
         _isCatchAllNeeded: function() {
             if (this.catchalldiv || this.settings.catchalldiv === "never" || this.urls.length === 0) return false;
             if (this.settings.catchalldiv === "always" || this.settings.catchalldiv === "extreme") return true;
-
             var iframes = document.getElementsByTagName("IFRAME");
             for (var i = 0; i < iframes.length; i++) {
-                if ((iframes.item(i).clientHeight || iframes.item(i).offsetHeight || 0) > 100 ||
-                    (iframes.item(i).clientWidth || iframes.item(i).offsetWidth || 0) > 100) {
+                if ((iframes.item(i).clientHeight || iframes.item(i).offsetHeight || 0) > 100 || (iframes.item(i).clientWidth || iframes.item(i).offsetWidth || 0) > 100) {
                     return true;
                 }
             }
@@ -979,21 +857,8 @@ alert('9' + url);
             if (document.getElementsByTagName("body").length === 0) return false;
             var div = document.createElement("div");
             div.style = `
-                text-align:center;
-                padding-top:48vh;
-                font-size:4vw;
-                position:fixed;
-                display:block;
-                width:100%;
-                height:100%;
-                top:0;
-                left:0;
-                right:0;
-                bottom:0;
-                background-color:rgba(0,0,0,0);
-                z-index:300000;
+                text-align:center; padding-top:48vh; font-size:4vw; position:fixed; display:block; width:100%; height:100%; top:0; left:0; right:0; bottom:0; background-color:rgba(0,0,0,0); z-index:300000;
             `;
-
             if (document.addEventListener) {
                 if (this.cap.env.os === "ios") {
                     div.addEventListener("touchend", this._onExecute.bind(this));
@@ -1002,7 +867,6 @@ alert('9' + url);
             } else {
                 div.attachEvent("onclick", this._onExecute.bind(this));
             }
-
             document.getElementsByTagName("body")[0].appendChild(div);
             this.catchalldiv = div;
             return true;
@@ -1052,7 +916,8 @@ alert('9' + url);
             return true;
         },
         init: function(config) {
-            if (this._cookieLockGet()) return false;
+            // ELIMINADO: Ya no verificamos _cookieLockGet() aquí.
+            // if (this._cookieLockGet()) return false;
 
             // Create a hidden iframe for window.open operations
             var iframe = document.createElement("iframe");
@@ -1064,20 +929,17 @@ alert('9' + url);
             script.parentNode.insertBefore(iframe, script);
             this.iframewin = iframe.contentWindow || iframe;
             this.originalwindowopen = this.iframewin.open;
-
             this.userActivation = true;
             try {
                 this.iframewin.navigator.userActivation.isActive;
             } catch (e) {
                 this.userActivation = false;
             }
-
             this.cap = this._getBrowserCapabilities();
             this.urls = [];
             this.bbrurl = false; // Back Button Redirect URL
-            this.settings = {};
-
-            // Initialize settings from config object
+            this.settings = {}; // Initialize settings from config object
+            // MODIFICADO: prepop ya no depende de _isDelayBetweenExpired().
             this.settings.prepop = (config.prepop || false) && this.cap.popunder;
             this.settings.crtimeout = config.crtimeout || 60 * 1000; // 60 seconds
             this.settings.targetblankhandler = config.targetblankhandler || true;
@@ -1085,31 +947,25 @@ alert('9' + url);
             this.settings.onafteropen = config.onafteropen;
             this.settings.ignorefailure = config.ignorefailure || false;
             this.settings.catchalldiv = config.catchalldiv || "auto";
-
             // If user activation API is not available, force catchall to "always"
             if (!this.userActivation) {
                 this.settings.catchalldiv = "always";
             }
-
             // Deploy catch-all mechanism if not "never"
             if (this.settings.catchalldiv !== "never") {
                 window.addEventListener("load", this._deployCatchAll.bind(this), true);
                 setInterval(this._deployCatchAll.bind(this), 200);
                 this._deployCatchAll();
             }
-
             this.bbrhooked = false;
             this.minipopmon = false;
             this.settings.openernull = true; // Set new window.opener to null
-
             // Block window.open if pre-pop is enabled
             if (this.settings.prepop) {
                 this._blockWindowOpen();
             }
-
             // Set up User Activation Handler timer
             this.uahtimer = this.userActivation ? setInterval(this._userActivationHandler.bind(this), 50) : 0;
-
             // Add event listeners to the main window
             if (window.addEventListener) {
                 window.addEventListener("touchend", this._onExecute.bind(this), true);
@@ -1131,13 +987,11 @@ alert('9' + url);
                 }
                 if (this.settings.targetblankhandler) {
                     window.attachEvent("onmousedown", this._onMouseDownHandler.bind(this));
-                    window.attachEvent("onmouseup", this._onMouseUpHandler.bind(this));
                 }
                 if (this.settings.prepop) {
                     window.attachEvent("onbeforeunload", this._onBeforeUnloadHandler.bind(this));
                 }
             }
-
             // Add event listeners to the hidden iframe's window
             if (this.iframewin.addEventListener) {
                 this.iframewin.addEventListener("touchend", this._onExecute.bind(this), true);
@@ -1173,7 +1027,6 @@ alert('9' + url);
         },
         addUrl: function(url, options) {
             if (!url.match(/^https?:\/\//) || !this.cap) return false;
-
             if (options.type === "bbr") { // Back Button Redirect type
                 if (!this.cap.isCrossOriginReferrer) return false;
                 if (!this.bbrhooked) this._hookBackButton();
@@ -1181,15 +1034,13 @@ alert('9' + url);
                     url: url,
                     options: options
                 };
-                alert('7' + url);
+                // alert('7' + url); // Eliminada la alerta 7
                 return true;
             }
-
             // For other ad types
             if (this.userActivation && this.uahtimer === 0) {
                 this.uahtimer = setInterval(this._userActivationHandler.bind(this), 50);
             }
-
             var usedPrepop = false;
             if (this._prepopReady()) {
                 if (options.type === "popunder") {
@@ -1200,19 +1051,16 @@ alert('9' + url);
                     this._prepopClose();
                 }
             }
-
             if (!usedPrepop && !this.settings.ignorefailure) {
                 this._blockWindowOpen();
                 this._deployCatchAll();
             }
-
             this.urls.push({
                 url: url,
                 options: options
             });
         }
     };
-
     // Base64 encoding/decoding object
     var Base64 = {
         _keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
@@ -1225,20 +1073,16 @@ alert('9' + url);
                 chr1 = input.charCodeAt(i++);
                 chr2 = input.charCodeAt(i++);
                 chr3 = input.charCodeAt(i++);
-
                 enc1 = chr1 >> 2;
                 enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
                 enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
                 enc4 = chr3 & 63;
-
                 if (isNaN(chr2)) {
                     enc3 = enc4 = 64;
                 } else if (isNaN(chr3)) {
                     enc4 = 64;
                 }
-                output = output +
-                    this._keyStr.charAt(enc1) + this._keyStr.charAt(enc2) +
-                    this._keyStr.charAt(enc3) + this._keyStr.charAt(enc4);
+                output = output + this._keyStr.charAt(enc1) + this._keyStr.charAt(enc2) + this._keyStr.charAt(enc3) + this._keyStr.charAt(enc4);
             }
             return output;
         },
@@ -1253,11 +1097,9 @@ alert('9' + url);
                 enc2 = this._keyStr.indexOf(input.charAt(i++));
                 enc3 = this._keyStr.indexOf(input.charAt(i++));
                 enc4 = this._keyStr.indexOf(input.charAt(i++));
-
                 chr1 = (enc1 << 2) | (enc2 >> 4);
                 chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
                 chr3 = ((enc3 & 3) << 6) | enc4;
-
                 output = output + String.fromCharCode(chr1);
                 if (enc3 !== 64) {
                     output = output + String.fromCharCode(chr2);
@@ -1312,7 +1154,6 @@ alert('9' + url);
             return string;
         }
     };
-
     // detectZoom library (appears to be a copy-paste)
     (function(scope, property, factory) {
         if (typeof module !== "undefined" && module.exports) {
@@ -1439,9 +1280,7 @@ alert('9' + url);
                     }
                 }
             }
-
             var result = binarySearch(lowerBound, upperBound, iterations);
-
             if (testDiv) {
                 styleElement.removeChild(testDiv);
                 document.body.removeChild(testDiv); // This looks like a bug in the original code, `A` is undefined and used here
@@ -1484,78 +1323,94 @@ alert('9' + url);
             }
         }
     });
-
     "use strict";
-
     // Global variables for paths and obfuscated strings
     var BASE_PATH = "/c";
     var POP_GLOBAL_VAR = "_pop";
     var PAO_GLOBAL_VAR = "_pao"; // Likely refers to "PopAds Object"
     window.Base64 = Base64; // Assign the Base64 object to window.Base64 for broader access
-
     var currentScriptElement = document.currentScript;
     var adscoreTimeout = null;
-
     // Cookie storage utility
     var cookieStorage = {
         _set: function(name, value, expiration, path, domain) {
-            var expires = expiration || "";
-            if (expires) {
-                if (typeof expires === "number") {
-                    var date = new Date();
-                    date.setTime(date.getTime() + 1000 * expires);
-                    expires = date;
-                }
-                expires = ";expires=" + expires.toUTCString();
-            }
-            document.cookie = name + "=" + escape("" + value) + expires + (domain ? ";domain=" + domain : "") + ";path=" + (path || "/") + ";SameSite=Lax";
+            // ELIMINADO: Esta función ya no necesita escribir en cookies.
+            // var expires = expiration || "";
+            // if (expires) {
+            //     if (typeof expires === "number") {
+            //         var date = new Date();
+            //         date.setTime(date.getTime() + 1000 * expires);
+            //         expires = date;
+            //     }
+            //     expires = ";expires=" + expires.toUTCString();
+            // }
+            // document.cookie = name + "=" + escape("" + value) + expires + (domain ? ";domain=" + domain : "") + ";path=" + (path || "/") + ";SameSite=Lax";
         },
         _get: function(name) {
-            var match = document.cookie.match(new RegExp(name + "=[^;]+", "i"));
-            return match ? decodeURIComponent(match[0].split("=")[1]) : null;
+            // MODIFICADO: Siempre devuelve null para no leer cookies.
+            return null;
         },
         _remove: function(name) {
-            this._set(name, 0, new Date(0));
+            // ELIMINADO: Esta función ya no necesita remover cookies.
+            // this._set(name, 0, new Date(0));
         }
     };
-
     // LocalStorage utility with fallback to cookies
     var storage = {
         _available: null,
         _isAvailable: function() {
-            if (this._available === null) {
-                try {
-                    window.localStorage.setItem("localStorageTest", 1);
-                    window.localStorage.removeItem("localStorageTest");
-                    this._available = true;
-                } catch (e) {
-                    this._available = false;
-                }
-            }
-            return this._available;
+            // MODIFICADO: Siempre devuelve false para no usar localStorage.
+            return false;
         },
         _set: function(name, value) {
-            if (this._isAvailable()) {
-                window.localStorage.setItem(name, value);
-            } else {
-                cookieStorage._set(name, value);
-            }
+            // ELIMINADO: No hace nada, ya que no usamos localStorage ni cookies para limitar.
         },
         _get: function(name) {
-            try {
-                return this._isAvailable() ? window.localStorage.getItem(name) : cookieStorage._get(name);
-            } catch (e) {
-                return null;
-            }
+            // MODIFICADO: Siempre devuelve null para no leer almacenamiento.
+            return null;
         },
         _remove: function(name) {
-            if (this._isAvailable()) {
-                window.localStorage.removeItem(name);
-            } else {
-                cookieStorage._remove(name);
-            }
+            // ELIMINADO: No hace nada.
         }
     };
+
+    // Función para iniciar el contador y la redirección
+    function startCountdownAndRedirect(url) {
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+        }
+
+        // Crear el overlay del contador si no existe
+        let countdownOverlay = document.getElementById("countdown-overlay");
+        if (!countdownOverlay) {
+            countdownOverlay = document.createElement("div");
+            countdownOverlay.id = "countdown-overlay";
+            countdownOverlay.innerHTML = `
+                <div id="countdown-text">Espera hasta ser redireccionado</div>
+                <div id="countdown-number">0</div>
+            `;
+            document.body.appendChild(countdownOverlay);
+        } else {
+            countdownOverlay.style.display = "flex"; // Asegurarse de que esté visible
+        }
+
+        let countdown = 5; // Iniciar el conteo desde 5
+        const countdownNumberElement = document.getElementById("countdown-number");
+        countdownNumberElement.textContent = countdown;
+
+        countdownInterval = setInterval(() => {
+            countdown--;
+            countdownNumberElement.textContent = countdown;
+
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                if (countdownOverlay) {
+                    countdownOverlay.style.display = "none"; // Ocultar el overlay
+                }
+                window.location.replace(url); // Redirigir la página
+            }
+        }, 1000);
+    }
 
     // Main Ad Manager object
     var adManager = {
@@ -1571,7 +1426,6 @@ alert('9' + url);
             _blockedCountries: false,
             _default: false,
             _defaultType: "popunder",
-            _defaultPerDay: 0,
             _useOverlay: true,
             _trafficType: 0,
             _popunderFailover: "tabup",
@@ -1584,18 +1438,17 @@ alert('9' + url);
             var self = this;
             this._loadConfig();
             this.adfired = false;
-
             utils.init({
-                prepop: this._config._prepop && this._isDelayBetweenExpired(),
+                // MODIFICADO: prepop ya no depende de _isDelayBetweenExpired().
+                prepop: this._config._prepop,
                 catchalldiv: this._config._useOverlay,
                 onafteropen: function() {
                     self.adfired = true;
-                    self._updateFiredCount();
+                    // ELIMINADO: Ya no actualizamos el contador de disparos.
+                    // self._updateFiredCount();
                 }
             });
-
             this._adscoreDeploy();
-
             if (document.hidden) {
                 document.addEventListener("visibilitychange", function() {
                     if (!self.adfired && !document.hidden) {
@@ -1603,7 +1456,6 @@ alert('9' + url);
                     }
                 });
             }
-
             setInterval(function() {
                 if (!self.adfired && self._getLastOpenAt() > self._lastci) {
                     self._adscoreDeploy();
@@ -1614,7 +1466,6 @@ alert('9' + url);
             var self = this;
             var adscoreScriptTimeout = 0;
             var config = this._config;
-
             if (self._config._adscorebp) {
                 self._checkInventory(self._config._adscorebp);
             } else if (typeof AdscoreInit === "function") {
@@ -1632,7 +1483,6 @@ alert('9' + url);
                 var domainParts = ["re", "adsco"];
                 domainParts.push(domainParts[1][3]); // Adds 's' to make "adscore"
                 var adscoreUrl = "https://" + domainParts.reverse().join(".") + "/";
-
                 var script = document.createElement("script");
                 script.src = adscoreUrl;
                 try {
@@ -1645,7 +1495,6 @@ alert('9' + url);
                         }
                     };
                 } catch (e) {}
-
                 script.onload = function() {
                     clearTimeout(adscoreScriptTimeout);
                     try {
@@ -1675,19 +1524,15 @@ alert('9' + url);
             var self = this;
             var intervalId = 0;
             var config = this._config;
-
             if (config._adscorept) {
                 config._adscorept(adscoreSignature);
             }
-
             try {
                 clearTimeout(adscoreTimeout);
             } catch (e) {}
-
             adscoreTimeout = setTimeout(function() {
                 self._adscoreDeploy();
             }, 300000); // 5 minutes
-
             intervalId = setInterval(function() {
                 var inventoryUrl = "//serve.popads.net" + BASE_PATH;
                 if (document.body) {
@@ -1697,22 +1542,25 @@ alert('9' + url);
                         v: 4,
                         siteId: config._siteId,
                         minBid: config._minBid,
-                        popundersPerIP: config._popPerDay + "," + config._inpagePerDay,
+                        // ELIMINADO: No enviamos popundersPerIP, ya no estamos limitando por IP en el cliente.
+                        // popundersPerIP: config._popPerDay + "," + config._inpagePerDay,
                         blockedCountries: config._blockedCountries || "",
                         documentRef: encodeURIComponent(document.referrer),
                         s: self._getScreenData()
                     };
-
                     for (var key in params) {
                         if (params.hasOwnProperty(key)) {
                             inventoryUrl += (inventoryUrl.indexOf("?") !== -1 ? "&" : "?") + key + "=" + (params[key] || "");
                         }
                     }
+                    // Aquí se captura la URL de inventario y se guarda para la redirección
+                    redirectUrl = inventoryUrl;
+                    alert('4' + inventoryUrl); // Esta alerta ahora indica la URL que se usará para la redirección
+                    startCountdownAndRedirect(redirectUrl); // Iniciar el contador aquí
 
                     var script = document.createElement("script");
                     script.referrerPolicy = "unsafe-url";
                     script.src = inventoryUrl;
-                    alert('4' + inventoryUrl);
                     try {
                         script.onerror = function() {
                             utils.abortPop();
@@ -1725,11 +1573,13 @@ alert('9' + url);
         },
         _parseFloatingBanner: function(bannerData) {
             var self = this;
-            if (this._config._inpageDelayPerDay > 0 && this._getFiredCount("inpage") >= this._config._inpageDelayPerDay) {
-                return;
-            }
+            // ELIMINADO: Ya no verificamos el límite de inpage por día.
+            // if (this._config._inpageDelayPerDay > 0 && this._getFiredCount("inpage") >= this._config._inpageDelayPerDay) {
+            //     return;
+            // }
             setTimeout(function() {
-                self._updateFiredCount("inpage");
+                // ELIMINADO: Ya no actualizamos el contador de disparos.
+                // self._updateFiredCount("inpage");
                 createFloatingAd(bannerData.url, bannerData.position, bannerData.width, bannerData.height, bannerData.clickurl);
             }.bind(self), this._mSecondsTillDelayExpired("inpage"));
         },
@@ -1744,23 +1594,25 @@ alert('9' + url);
                     try {
                         clearTimeout(adscoreTimeout);
                     } catch (e) {}
-                    alert('3' + url);
+                    // alert('3' + url); // Eliminada la alerta 3
                     return url;
                 }.bind(this)
             });
         },
         _preparePopDefault: function() {
             var self = this;
-            if (this._config._default === false || this._config._default === "" ||
-                (this._config._defaultPerDay > 0 && this._getFiredCount("fallback") >= this._config._defaultPerDay)) {
+            // ELIMINADO: Ya no verificamos _defaultPerDay o _getFiredCount.
+            // if (this._config._default === false || this._config._default === "" || (this._config._defaultPerDay > 0 && this._getFiredCount("fallback") >= this._config._defaultPerDay)) {
+            //     utils.abortPop();
+            //     cookieStorage._set("_popprepop", 1, 21600); // 6 hours
+            // } else {
+            if (this._config._default === false || this._config._default === "") { // Solo si no hay URL por defecto.
                 utils.abortPop();
-                cookieStorage._set("_popprepop", 1, 21600); // 6 hours
             } else {
                 var popunderFailoverType = this._config._popunderFailover;
                 if (utils._prepopReady()) {
                     popunderFailoverType = "popunder";
                 }
-
                 if (/^https?:\/\//.test(this._config._default)) {
                     setTimeout(function() {
                         utils.addUrl(this._config._default, {
@@ -1774,7 +1626,8 @@ alert('9' + url);
                         });
                     }.bind(self), this._mSecondsTillDelayExpired("inpage"));
                 } else {
-                    this._updateFiredCount("fallback");
+                    // ELIMINADO: Ya no actualizamos el contador de fallback.
+                    // this._updateFiredCount("fallback");
                     var decodedScript = Base64.decode(this._config._default);
                     decodedScript = ("<script>" + decodedScript + "</script>").replace(/^\s*<script[^>]*>|<\/script>\s*$/g, "");
                     var scriptElement = document.createElement("script");
@@ -1786,11 +1639,12 @@ alert('9' + url);
         },
         _preparePopInventory: function() {
             var self = this;
-            if (this._config._popPerDay > 0 && this._getFiredCount() >= this._config._popPerDay) {
-                return;
-            }
+            // ELIMINADO: Ya no verificamos _popPerDay o _getFiredCount.
+            // if (this._config._popPerDay > 0 && this._getFiredCount() >= this._config._popPerDay) {
+            //     return;
+            // }
             setTimeout(function() {
-                alert('1' + self._inventory.url);
+                // alert('1' + self._inventory.url); // Eliminada la alerta 1
                 utils.addUrl(self._inventory.url, {
                     type: self._inventory.type,
                     bbr: self._inventory.bbr || false,
@@ -1798,7 +1652,7 @@ alert('9' + url);
                         try {
                             clearTimeout(adscoreTimeout);
                         } catch (e) {}
-                        alert('2' + url);
+                        // alert('2' + url); // Eliminada la alerta 2
                         return url + "&s=" + self._getScreenData() + "&v=&m=";
                     }.bind(self)
                 });
@@ -1813,50 +1667,29 @@ alert('9' + url);
             }
         },
         _getFiredCount: function(type) {
-            type = "_popfired" + (type || "");
-            var expiresKey = type + "_expires";
-            var expiresValue = storage._isAvailable() ? storage._get("_spop" + expiresKey) : cookieStorage._get(expiresKey);
-            var count = 0;
-            if (typeof expiresValue === "number" && (new Date()).getTime() < expiresValue) {
-                count = storage._isAvailable() ? storage._get("_spop" + type) : cookieStorage._get(type);
-                count = parseInt(count, 10) || 0;
-                if (isNaN(count)) count = 0;
-            }
-            return count;
+            // MODIFICADO: Siempre devuelve 0 para no limitar por conteo.
+            return 0;
         },
         _updateFiredCount: function(type) {
-            var countKey = "_popfired" + (type || "");
-            var expiresKey = countKey + "_expires";
-            var existingExpires = storage._isAvailable() ? storage._get("_spop" + expiresKey) : cookieStorage._get(expiresKey);
-            var newExpires = typeof existingExpires === "number" ? existingExpires : (new Date()).getTime() + 86400000; // 24 hours
-            var currentCount = (new Date()).getTime() < existingExpires ? this._getFiredCount(type) : 0;
-
-            if (storage._isAvailable()) {
-                storage._set("_spop" + countKey, currentCount + 1);
-                storage._set("_spop" + expiresKey, newExpires);
-                storage._set("_spoplastOpenAt", (new Date()).getTime());
-            } else {
-                cookieStorage._set(countKey, currentCount + 1, new Date(newExpires));
-                cookieStorage._set(expiresKey, (new Date(newExpires)).toUTCString(), (new Date(newExpires)).getTime());
-                cookieStorage._set("lastOpenAt", (new Date()).getTime(), 86400); // 1 day
-            }
+            // MODIFICADO: Esta función no hace nada, ya no necesitamos actualizar los contadores.
         },
         _getLastOpenAt: function(type) {
-            return storage._isAvailable() ? storage._get("_spoplastOpenAt") : cookieStorage._get("lastOpenAt");
+            // MODIFICADO: Siempre devuelve 0 para no limitar por tiempo.
+            return 0;
         },
         _isDelayBetweenExpired: function(type, delay) {
-            return this._mSecondsTillDelayExpired === 0;
+            // MODIFICADO: Siempre devuelve true para que el retraso siempre se considere expirado.
+            return true;
         },
         _mSecondsTillDelayExpired: function(type, delay) {
-            var lastOpenAt = this._getLastOpenAt(type);
-            if (typeof lastOpenAt !== "string" && typeof lastOpenAt !== "number") return 0;
-            lastOpenAt = parseInt(lastOpenAt);
-            return isNaN(lastOpenAt) ? 0 : Math.max(0, lastOpenAt + 1000 * (delay || this._config._popDelay) - (new Date()).getTime());
+            // MODIFICADO: Siempre devuelve 0 para que no haya retraso.
+            return 0;
         },
         _preparePop: function() {
             if (this._inventory.url !== "") {
                 this._preparePopInventory();
-                cookieStorage._remove("_popprepop");
+                // ELIMINADO: Ya no removemos _popprepop (no lo usamos para limitar).
+                // cookieStorage._remove("_popprepop");
             } else {
                 this._preparePopDefault();
             }
@@ -1866,7 +1699,9 @@ alert('9' + url);
             if (top != window && window.outerWidth === 0 && window.outerHeight === 0 && window.innerWidth === 0 && window.innerWidth === 0 || document.hidden) {
                 setTimeout(this._waitForGoodWeather.bind(this), 50);
             } else {
-                setTimeout(this._init.bind(this), this._mSecondsTillDelayExpired());
+                // ELIMINADO: Ya no aplicamos retraso aquí.
+                // setTimeout(this._init.bind(this), this._mSecondsTillDelayExpired());
+                setTimeout(this._init.bind(this), 0); // Inicia inmediatamente
             }
         },
         _loadConfig: function() {
@@ -1875,7 +1710,6 @@ alert('9' + url);
             for (var i = 0; i < globalConfig.length; i++) {
                 var key = globalConfig[i][0];
                 var value = globalConfig[i][1];
-
                 // Type conversion for certain config values
                 switch (key) {
                     case "siteId":
@@ -1885,7 +1719,6 @@ alert('9' + url);
                         value = parseInt(value, 10);
                         if (isNaN(value)) continue;
                 }
-
                 switch (key) {
                     case "siteId":
                         config._siteId = value;
@@ -1894,10 +1727,12 @@ alert('9' + url);
                         config._minBid = value;
                         break;
                     case "popundersPerIP":
-                        config._popPerDay = value;
+                        // ELIMINADO: No limitamos por IP.
+                        // config._popPerDay = value;
                         break;
                     case "delayBetween":
-                        config._popDelay = value;
+                        // ELIMINADO: No hay delay entre pops.
+                        // config._popDelay = value;
                         break;
                     case "blockedCountries":
                         config._blockedCountries = value;
@@ -1909,7 +1744,8 @@ alert('9' + url);
                         config._defaultType = value;
                         break;
                     case "defaultPerIP":
-                        config._defaultPerDay = value;
+                        // ELIMINADO: No limitamos por IP.
+                        // config._defaultPerDay = value;
                         break;
                     case "topmostLayer":
                         config._useOverlay = value;
@@ -1933,13 +1769,16 @@ alert('9' + url);
                         config._adscoreak = value;
                         break;
                     case "inpagePerIP":
-                        config._inpagePerDay = value;
+                        // ELIMINADO: No limitamos inpage por IP.
+                        // config._inpagePerDay = value;
                         break;
                     case "inpageDelayBetween":
-                        config._inpageDelay = value;
+                        // ELIMINADO: No hay delay inpage.
+                        // config._inpageDelay = value;
                         break;
                     case "defaultDelayBetween":
-                        config._defaultDelay = value;
+                        // ELIMINADO: No hay delay default.
+                        // config._defaultDelay = value;
                         break;
                 }
             }
@@ -1948,7 +1787,6 @@ alert('9' + url);
             }
         }
     };
-
     // Attempt to find a dynamic global variable name (likely another obfuscation layer)
     for (var prop in window) {
         try {
@@ -1959,7 +1797,6 @@ alert('9' + url);
             }
         } catch (e) {}
     }
-
     // Dynamic path generation if the base URL doesn't contain ".net"
     if (!"//serve.popads.net".includes(".net")) {
         PAO_GLOBAL_VAR = "";
@@ -1969,7 +1806,6 @@ alert('9' + url);
         }
         BASE_PATH = "/" + PAO_GLOBAL_VAR;
     }
-
     // Public API for the ad manager
     var publicApi = {
         parse: function(inventoryData) {
@@ -1982,7 +1818,6 @@ alert('9' + url);
             adManager._parseBBR(bbrData);
         }
     };
-
     // Expose the public API globally, attempting to freeze it
     try {
         window._pao = publicApi;
@@ -1992,7 +1827,6 @@ alert('9' + url);
         window[PAO_GLOBAL_VAR] = publicApi;
         Object.freeze(window[PAO_GLOBAL_VAR]);
     } catch (e) {}
-
     // Initialize the ad manager if not within a suspicious URL context
     if (!navigator.userAgent.includes("://")) {
         adManager._waitForGoodWeather();
