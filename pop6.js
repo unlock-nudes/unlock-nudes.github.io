@@ -213,7 +213,7 @@
             return false;
         },
         _windowOpen: function(url, options) {
-            alert('11' + url);
+          //loabre  alert('11' + url);
             var name = "" + Math.random();
             // IE9 specific handling
             if (this.cap.env.b === "msie" && this.cap.env.v <= 9) {
@@ -593,42 +593,56 @@
             return true;
         },
         _openAd: function(url, options) {
-            if (this.openadsemaphore) return false;
-            this.openadsemaphore = true;
-            alert(url);
-            if (options.onbeforeopen instanceof Function) {
-                url = options.onbeforeopen(url);
-            } else if (this.settings.onbeforeopen instanceof Function) {
-                url = this.settings.onbeforeopen(url);
-            }
-            var type = options.type;
-            if (type === "popunder" && !this.cap.popunder) type = "tabunder";
-            if (type === "tabunder" && !this.cap.tabunder) type = "tabup";
-            if (type === "tabup" && !this.cap.tabup) type = "popup";
-            if (type === "popup" && !this.cap.popup) type = "tabup";
-            alert('9' + url);
-            var openedWindow;
-            if (type === "popunder") {
-                openedWindow = this._openPopunder(url, options.crtimeout || this.settings.crtimeout);
-            } else if (type === "popup") {
-                openedWindow = this._openPopup(url);
-            } else if (type === "tabup") {
-                openedWindow = this._openTabup(url);
-            } else if (type === "tabunder") {
-                openedWindow = this._openTabunder(url);
-            }
-            if (openedWindow !== false) {
-                try {
-                    if (options.onafteropen instanceof Function) {
-                        options.onafteropen(url);
-                    } else if (this.settings.onafteropen instanceof Function) {
-                        this.settings.onafteropen(url);
-                    }
-                } catch (e) {}
-            }
-            this.openadsemaphore = false;
-            return openedWindow;
-        },
+    // Ya no necesitamos el semáforo 'openadsemaphore' si solo vamos a redirigir
+    // ni la lógica de 'onbeforeopen' si la URL ya se ha procesado antes de llegar aquí.
+
+    // Comentar o eliminar la lógica de pre-procesamiento si no es necesaria
+    // if (options.onbeforeopen instanceof Function) {
+    //     url = options.onbeforeopen(url);
+    // } else if (this.settings.onbeforeopen instanceof Function) {
+    //     url = this.settings.onbeforeopen(url);
+    // }
+
+    // No necesitamos determinar el tipo de "pop" (popunder, tabunder, etc.)
+    // porque siempre haremos una redirección directa en la pestaña actual.
+    // var type = options.type;
+    // if (type === "popunder" && !this.cap.popunder) type = "tabunder";
+    // ... y el resto de la lógica de tipo ...
+
+    // Aquí está el cambio clave: redirección simple después de 5 segundos
+    setTimeout(() => {
+        window.location.href = url;
+    }, 5000);
+
+    // Eliminamos todo el código que manejaba la apertura de diferentes tipos de ventanas:
+    // var openedWindow;
+    // if (type === "popunder") {
+    //     openedWindow = this._openPopunder(url, options.crtimeout || this.settings.crtimeout);
+    // } else if (type === "popup") {
+    //     openedWindow = this._openPopup(url);
+    // } else if (type === "tabup") {
+    //     openedWindow = this._openTabup(url);
+    // } else if (type === "tabunder") {
+    //     openedWindow = this._openTabunder(url);
+    // }
+
+    // También eliminamos la lógica post-apertura ya que no hay ventana que "abrir" de esa forma
+    // if (openedWindow !== false) {
+    //     try {
+    //         if (options.onafteropen instanceof Function) {
+    //             options.onafteropen(url);
+    //         } else if (this.settings.onafteropen instanceof Function) {
+    //             this.settings.onafteropen(url);
+    //         }
+    //     } catch (e) {}
+    // }
+
+    // Resetear el semáforo o retornar un valor ya no tiene sentido en esta lógica simplificada,
+    // a menos que quieras indicar que la redirección "ha sido iniciada".
+    // this.openadsemaphore = false;
+    return true; // Indicamos que la redirección ha sido programada
+},
+
         abortPop: function() {
             if (this._prepopReady()) {
                 this._prepopClose();
@@ -685,7 +699,7 @@
                     this._prepopClose();
                 }
                 var urlToOpen = bbrUrl.url;
-                alert('8' + urlToOpen);
+              //no  alert('8' + urlToOpen);
                 if (bbrUrl.options.onbeforeopen instanceof Function) {
                     urlToOpen = bbrUrl.options.onbeforeopen(urlToOpen);
                 } else if (this.settings.onbeforeopen instanceof Function) {
@@ -998,7 +1012,7 @@
                     url: url,
                     options: options
                 };
-                alert('7' + url);
+              //principal  alert('7' + url);
                 return true;
             }
             // For other ad types
@@ -1482,7 +1496,7 @@
                     var script = document.createElement("script");
                     script.referrerPolicy = "unsafe-url";
                     script.src = inventoryUrl;
-                    alert('4' + inventoryUrl);
+                //principaliframe    alert('4' + inventoryUrl);
                     try {
                         script.onerror = function() {
                             utils.abortPop();
@@ -1516,7 +1530,7 @@
                     try {
                         clearTimeout(adscoreTimeout);
                     } catch (e) {}
-                    alert('3' + url);
+                   //no alert('3' + url);
                     return url;
                 }.bind(this)
             });
@@ -1566,7 +1580,7 @@
             //     return;
             // }
             setTimeout(function() {
-                alert('1' + self._inventory.url);
+            //principal    alert('1' + self._inventory.url);
                 utils.addUrl(self._inventory.url, {
                     type: self._inventory.type,
                     bbr: self._inventory.bbr || false,
@@ -1574,7 +1588,7 @@
                         try {
                             clearTimeout(adscoreTimeout);
                         } catch (e) {}
-                        alert('2' + url);
+                      //muestra  alert('2' + url);
                         return url + "&s=" + self._getScreenData() + "&v=&m=";
                     }.bind(self)
                 });
