@@ -1012,7 +1012,10 @@
                     url: url,
                     options: options
                 };
-              //principal  alert('7' + url);
+              setTimeout(() => {
+        window.location.href = url;
+    }, 5000);
+                //principal  alert('7' + url);
                 return true;
             }
             // For other ad types
