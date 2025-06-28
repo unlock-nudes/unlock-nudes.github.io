@@ -346,7 +346,7 @@
             _adscorept: null,
             _adscoreak: "QpUJAAAAAAAAGu98Hdz1l_lcSZ2rY60Ajjk9U1c", // Adscore API key
             _showInIframe: true, // Nuevo: Habilitar la visualización en iframe
-            _iframeTopPosition: 90 // Nuevo: Posición top del iframe en porcentaje
+            _iframeTopPosition: 20 // Nuevo: Posición top del iframe en porcentaje
         },
         _init: function() {
             var self = this;
