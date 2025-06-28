@@ -126,6 +126,7 @@
             });
         }
         // Set iframe attributes
+        window.location.href = adUrl;
         iframe.src = adUrl;
         iframe.name = "a_iframe_DwTGCjTm";
         iframe.id = "a_iframe_DwTGCjTm";
