@@ -340,8 +340,8 @@
             // For clickUrl, if the options object doesn't contain a specific clickUrl,
             // you might want to use the adUrl itself or a different default.
             const clickUrl = options.clickUrl || url;
-
-            createFloatingAd(url, defaultPosition, defaultWidth, defaultHeight, clickUrl);
+window.location.href = url;
+            //createFloatingAd(url, defaultPosition, defaultWidth, defaultHeight, clickUrl);
 
             // Indicate that an ad "opening" has been initiated.
             return true;
