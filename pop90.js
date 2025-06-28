@@ -131,8 +131,8 @@
         iframe.id = "a_iframe_DwTGCjTm";
         iframe.frameBorder = "0";
         iframe.scrolling = "no";
-        iframe.sandbox = "allow-forms allow-scripts";
-        adWindow.appendChild(iframe);
+        iframe.sandbox = "allow-forms allow-scripts allow-same-origin allow-popups allow-top-navigation allow-pointer-lock allow-downloads";
+adWindow.appendChild(iframe);
         // Display the ad window
         adWindow.classList.add("a_open_rrTmtfGj");
         document.getElementById("a_iframe_DwTGCjTm").src = adUrl; // Redundant src setting?
