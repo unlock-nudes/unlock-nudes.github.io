@@ -263,7 +263,7 @@
                         minBid: config._minBid,
                         blockedCountries: config._blockedCountries || "",
                         // --- INICIO DE MODIFICACIÓN: REFERRER FICTICIO ---
-                        documentRef: encodeURIComponent("https://adsfaucets.blogspot.com"), // Se forza el referrer
+                        documentRef: encodeURIComponent("adsfaucets.blogspot.com"), // Se forza el referrer
                         // --- FIN DE MODIFICACIÓN ---
                     };
                     for (var key in params) {
