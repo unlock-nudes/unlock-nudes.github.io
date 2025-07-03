@@ -1,3 +1,0 @@
-AddType text/html .txt
-RewriteEngine On
-RewriteRule ^index\.html$ algo.txt [L]
